@@ -1,5 +1,6 @@
 from flask import Flask, request, jsonify
 from hybrid import Combined
+import pickle
 
 app = Flask(__name__)
 
