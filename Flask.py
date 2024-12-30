@@ -1,6 +1,5 @@
 from flask import Flask, request, jsonify
-from hybrid import Combined
-import pickle
+from hybrid_recommendation import recommendation
 
 app = Flask(__name__)
 
@@ -10,20 +9,13 @@ def predict_api():
         # Lấy dữ liệu từ request
         data = request.get_json()
         product_id = data.get('product_id')
-        content_w = data.get('content_w', 0.7)
-        item_w = data.get('item_w', 0.3)
-        k_out = data.get('k_out', 10) # total items will be display
+        model_path = "models/top_k_content_base.pkl"
 
-        # Kiểm tra đầu vào hợp lệ
-        if product_id is None:
-            return jsonify({"error": "Missing product_id"}), 400
 
-        if not (0 <= content_w <= 1 and 0 <= item_w <= 1):
-            return jsonify({"error": "Weights must be between 0 and 1"}), 400
-
-        # Gọi mô hình để dự đoán
-        recommendations = Combined(product_id, content_w, item_w, k_out)
-        return jsonify({"product_id": product_id, "recommendations": recommendations}), 200
+        recommendations = recommendation(model_path, product_id)
+        return jsonify({
+            'recommendations': recommendations
+        }), 200
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
