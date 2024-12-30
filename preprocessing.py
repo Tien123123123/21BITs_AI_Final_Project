@@ -14,10 +14,10 @@ def preprocess_data(csv_file_path, nrows=1000000):
     df["category_code"] = df["category_code"].apply(lambda loc: str(loc).replace(".", " "))
 
     # Encode product, user, and session IDs
-    # enc = LabelEncoder()
-    # df["product_id"] = enc.fit_transform(df["product_id"])
-    # df["user_id"] = enc.fit_transform(df["user_id"])
-    # df["user_session"] = enc.fit_transform(df["user_session"])
+    enc = LabelEncoder()
+    df["product_id"] = enc.fit_transform(df["product_id"])
+    df["user_id"] = enc.fit_transform(df["user_id"])
+    df["user_session"] = enc.fit_transform(df["user_session"])
 
     # Calculate event-related metrics
     is_view = df[df["event_type"] == "view"].groupby(["user_id", "user_session", "product_id"]).size().reset_index(name="is_view")
