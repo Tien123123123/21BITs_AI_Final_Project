@@ -1,11 +1,13 @@
 import pandas as pd
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
+
+from Practice.implicit_test import product_id
 from preprocessing import preprocess_data
 import pickle
 
 def Content_Base():
-    df_content['combined_features'] = df_content['category_code'] + " " + df_content['brand']
+    df_content['combined_features'] = df_content['name'] + " " + df_content['category_code'] + " " + df_content['brand']
     vectorizer = TfidfVectorizer()
     vectorizer_mat = vectorizer.fit_transform(df_content['combined_features'])
     cos_sm_content = cosine_similarity(vectorizer_mat)
@@ -19,7 +21,10 @@ def select_top_k(recommend_type, top_k, save_path):
     top_k_similarity = {}
     for p_id in df_sim.index:
         similarity_items = df_sim.loc[p_id, :]
-        result = similarity_items.sort_values(ascending=False)[:top_k]
+        result = similarity_items.sort_values(ascending=False)
+        if p_id in result:
+            result = result.drop(p_id)
+        result = result[:top_k]
         result = result.to_dict()
         top_k_similarity[p_id] = result
 
@@ -30,10 +35,10 @@ def select_top_k(recommend_type, top_k, save_path):
     return f"Module is saved successfully at {save_path}"
 
 if __name__ == '__main__':
-    root = "D:\Pycharm\Projects\pythonProject\AI\ML\Projects\Recommendation-Ecomerece\dataset\one_mil_data.csv"
-    df, df_weighted = preprocess_data(root)
+    root = "D:\Pycharm\Projects\pythonProject\AI\ML\Projects\Recommendation-Ecomerece\data/merged_data.csv"
+    df, df_weighted = preprocess_data(root, nrows=100)
 
-    selected_features = ["product_id", "category_code", "brand"]
+    selected_features = ["product_id", "name", "category_code", "brand"]
     df_content = df[selected_features].drop_duplicates(subset=['product_id'])
     df_content = df_content.sort_values(by="product_id", ascending=False)
 
