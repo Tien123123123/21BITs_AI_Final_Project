@@ -1,10 +1,12 @@
 import pandas as pd
 import numpy as np
 from sklearn.preprocessing import LabelEncoder
+from sklearn.impute import SimpleImputer
+from scipy.sparse import csr_matrix
 
-def preprocess_data(root, is_encoded=False):
+def preprocess_data(root, nrows, is_encoded=False):
     # Load data
-    df = pd.read_csv(root)
+    df = pd.read_csv(root, nrows=nrows)
     df = df.replace([0, '0'], np.nan).dropna()
 
     # Adjust category code
@@ -62,3 +64,9 @@ def preprocess_data(root, is_encoded=False):
     df_weighted = df.groupby(["user_id", "product_id"])["score"].sum().reset_index(name="score")
 
     return df, df_weighted
+
+
+if __name__ == '__main__':
+    root = "data/one_data.csv" # write data in here
+
+    df_main, _ = preprocess_data(root, is_encoded=True, nrows=1000000)

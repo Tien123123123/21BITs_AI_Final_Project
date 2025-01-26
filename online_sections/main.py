@@ -15,7 +15,8 @@ if not os.path.exists(csv_file_path):
 
 # Step 2: Preprocess data
 print("Preprocessing data...")
-df, df_weighted = preprocess_data(csv_file_path)
+df, df_weighted = preprocess_data("data/one_data.csv", nrows=10000)
+print("Complete")
 
 # Step 3: Train model only if it doesn't already exist
 model_file = "../model.pkl"
