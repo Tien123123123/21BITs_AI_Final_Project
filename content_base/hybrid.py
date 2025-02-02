@@ -35,7 +35,7 @@ def select_top_k(recommend_type, top_k, save_path):
 if __name__ == '__main__':
     # Load and Preprocessing Data
     root = "D:\Pycharm\Projects\pythonProject\AI\ML\Projects\Recommendation-Ecomerece\data/merged_data.csv"
-    df, df_weighted = preprocess_data(root, nrows=100)
+    df, df_weighted = preprocess_data(root, nrows=100, is_encoded=True)
     selected_features = ["product_id", "name", "category_code", "brand"]
     df_content = df[selected_features].drop_duplicates(subset=['product_id'])
     df_content = df_content.sort_values(by="product_id", ascending=False)
