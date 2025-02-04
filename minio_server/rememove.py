@@ -8,10 +8,6 @@ def remove_object(bucket_name, object_name):
     object_name = object_name  # name of data after upload
 
     try:
-        if not minio_server.bucket_exists(bucket_name=bucket_name):
-            minio_server.make_bucket(bucket_name=bucket_name)
-            print(f"bucket name {bucket_name} was created successfully !")
-
         minio_server.remove_object(
             bucket_name=bucket_name,
             object_name=object_name,
