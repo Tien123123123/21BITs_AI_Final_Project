@@ -5,7 +5,6 @@ from surprise.accuracy import rmse, mae
 from surprise.model_selection import GridSearchCV
 from surprise.prediction_algorithms import SVD
 
-
 def train_model(df_weighted, model=SVD(), param_grid=False):
     # Define rating scale
     min_score = df_weighted["score"].min()

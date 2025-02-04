@@ -27,7 +27,7 @@ def push_object(bucket_name, file_path, object_name):
         print(err)
 
 if __name__ == '__main__':
-    timezone = pytz.timezone("Asia/Ho_Chi_Minh")  # Múi giờ Việt Nam
+    timezone = pytz.timezone("Asia/Ho_Chi_Minh")
     now = datetime.now(timezone)
     formatted_time = now.strftime("%d_%m_%y_%H:%M")
 
