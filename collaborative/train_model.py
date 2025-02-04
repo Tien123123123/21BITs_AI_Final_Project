@@ -16,12 +16,12 @@ def train_model(df_weighted, model=SVD(), param_grid=False):
     data = Dataset.load_from_df(df_weighted, reader)
     trainset = data.build_full_trainset()
 
-    if param_grid == True:
+    if param_grid:
         model = GridSearchCV(SVD, param_grid=param_grid, measures=["rmse", "mae"], cv=5)
         model.fit(trainset)
         results = [model.best_score["rmse"], model.best_params["rmse"], model.best_score["mae"], model.best_params["mae"]]
     elif param_grid == False:
-        model.fit(trainset)  # Sử dụng trainset ở đây
+        model.fit(trainset)
         results = cross_validate(model, data, measures=['RMSE', 'MAE'], cv=5, verbose=True)
 
     return model, results

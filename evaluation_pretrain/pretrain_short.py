@@ -9,15 +9,18 @@ import argparse
 def arg_parse():
     parser = argparse.ArgumentParser("Collaborative Pretrain Process!")
     parser.add_argument("--save", "-s", type=bool, default="True", help="Save model after training and evaluating", required=False)
-    parser.add_argument("--data", "-d", type=str, default="data/[data name].csv", help="file path and name of dataset", required=True)
+    parser.add_argument("--bucket", "-b", type=str, default="recommendation", help="minio bucket name",
+                        required=True)
+    parser.add_argument("--data", "-d", type=str, default="dataset.csv", help="file path and name of dataset", required=True)
     parser.add_argument("--param", "-p", type=str, default="{'param 1': [1,2,3,4], param 2': [1,2,3,4]}", help="Parameter for SVD model", required=False)
     args = parser.parse_args()
     return args
 
 def tracking_pretrain(args):
     # Load and Split data
-    root = args.data
-    df, df_weighted = preprocess_data(root, is_encoded=True)
+    bucket_name = args.bucket
+    file_name = args.data
+    df, df_weighted = preprocess_data(bucket_name, file_name, is_encoded=True)
     df_test, df_weighted, df_GT = train_test_split(df, df_weighted, test_size=0.1)
     # Train model with train data
     model, _ = train_model(df_weighted, param_grid=args.param if args.param else False)

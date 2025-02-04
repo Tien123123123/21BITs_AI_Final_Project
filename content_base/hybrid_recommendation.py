@@ -5,12 +5,15 @@ def recommendation(model_path, p_id, top_k=100):
     with open(model_path, 'rb') as f:
         model = pickle.load(f)
 
-    recommendations = model.get(p_id, {})
-    sorted_recommendations = sorted(recommendations.items(), key=lambda item: item[1], reverse=True)[:top_k]
-    print(recommendations.items())
-    formatted_recommendations = [
-        {"product_id": product_id, "similarity_score": similarity_score}
-        for product_id, similarity_score in sorted_recommendations
-    ]
+    for product_id, recs in list(model.items()):
+        if product_id == p_id:
+            formatted_recommendations = {
+                    "product_id": product_id,
+                    "recommendations": [{"product_id": item} for item in recs]
+            }
 
     return formatted_recommendations
+
+result = recommendation("D:\Pycharm\Projects\pythonProject\AI\ML\Projects\Recommendation_Ecomerece\content_base/models/content_base.pkl", 100)
+
+print(f"this is a {result}")
