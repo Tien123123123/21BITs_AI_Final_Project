@@ -1,7 +1,6 @@
 import pandas as pd
 import pickle
 
-
 def recommend_products(model_file, df, target_user_id, target_product_id, top_n=10):
     # Load the trained model
     with open(model_file, "rb") as f:

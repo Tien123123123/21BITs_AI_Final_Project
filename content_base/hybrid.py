@@ -7,10 +7,7 @@ import pickle
 from process_data.preprocessing import preprocess_data
 
 # Function to preprocess and generate content-based similarity using ANN (Sklearn)
-def Content_Base_ANN_Sklearn(df_content, k=5):
-    # Xử lý dữ liệu thiếu
-    df_content = df_content.fillna('')
-
+def content_base(df_content, k=5):
     # Kết hợp các thông tin cần thiết thành một văn bản duy nhất
     df_content['combined_features'] = (
             df_content['name'].astype(str) + " " +
@@ -20,49 +17,49 @@ def Content_Base_ANN_Sklearn(df_content, k=5):
             df_content['price'].astype(str)
     )
 
-    # Tạo TF-IDF vector
+    # Vectorize data
     vectorizer = TfidfVectorizer(max_features=5000, min_df=5, max_df=0.8)
     tfidf_matrix = vectorizer.fit_transform(df_content['combined_features']).astype(np.float32)
 
-    # Dùng NearestNeighbors với Ball Tree để tìm kiếm ANN
-    model = NearestNeighbors(n_neighbors=k, metric='cosine', algorithm='brute', n_jobs=-1)
+    # Model
+    model = NearestNeighbors(n_neighbors=k+1, metric='cosine', algorithm='brute', n_jobs=-1)
     model.fit(tfidf_matrix)
 
-    # Tìm k sản phẩm gần nhất
+    # Get K nearest items
     distances, indices = model.kneighbors(tfidf_matrix)
 
-    # Lưu kết quả vào dictionary
+    # Save result into dict
     recommendations = {}
     product_ids = df_content['product_id'].tolist()
 
     for i, p_id in enumerate(product_ids):
-        recommendations[p_id] = [product_ids[idx] for idx in indices[i] if idx != i]  # Loại bỏ chính nó
+        recommendations[p_id] = [product_ids[idx] for idx in indices[i] if idx != i]  # remove it's self
 
     return recommendations
 
 # Main Function
 if __name__ == "__main__":
-    # Đường dẫn tới file dữ liệu (ví dụ)
+    # Load data
     root = "D:/Pycharm/Projects/pythonProject/AI/ML/Projects/Recommendation_Ecomerece/data/merged_data_second.csv"
     # Preprocess data và lấy phần dữ liệu mẫu
     df, _ = preprocess_data(root, is_encoded=True)
     print("Preprocess Complete !")
 
-    # Lọc các cột cần thiết
+    # Select features and Drop duplicate
     selected_features = ["name", "product_id", "category_code", "brand", "price"]
     df_content = df[selected_features].drop_duplicates(subset=['product_id'])
     df_content = df_content.sort_values(by="product_id", ascending=False)
     print("Drop duplicate and Feature Selection Complete !")
 
-    # Gọi hàm để tạo mô hình Content-Based với ANN
+    # Content Base
     s_time = time.time()
-    k = 11  # Số lượng sản phẩm tương tự
-    recommendations = Content_Base_ANN_Sklearn(df_content, k=k)
+    k = 10  # Total recommended items
+    recommendations = content_base(df_content, k=k)
     e_time = time.time()
     print("Train Complete !")
     print(f"Time consumed: {e_time - s_time}")
 
-    # In kết quả cho 5 sản phẩm đầu tiên
+    # Display result
     for product_id, recs in list(recommendations.items())[:5]:
         print(f"Product ID: {product_id} -> Recommended Products: {recs}")
 
