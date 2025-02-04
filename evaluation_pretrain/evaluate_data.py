@@ -42,7 +42,7 @@ def evaluate_model(df_test, model, top_N):
     df_metrics = pd.DataFrame(metrics_list)
     # print(f"Mean value: {df_metrics['f1_score'].mean()}")
 
-    return df_metrics['f1_score'].mean()
+    return df_test, df_metrics, df_metrics['f1_score'].mean()
 
 if __name__ == '__main__':
     # Load and preprocess data
@@ -53,4 +53,7 @@ if __name__ == '__main__':
     # Train model
     model, _ = train_model(df_weighted)
     # Evaluate model
-    evaluate_model(df_test, model, top_N=3)
+    df_test, df_metrics, mean = evaluate_model(df_test, model, top_N=3)
+
+    print(df_test.head())
+    print(df_metrics.head())
