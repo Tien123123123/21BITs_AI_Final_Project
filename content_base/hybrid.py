@@ -42,19 +42,19 @@ def Content_Base_ANN_Sklearn(df_content, k=5):
 
 # Main Function
 if __name__ == "__main__":
-    # Đường dẫn tới file dữ liệu (ví dụ)
+    # Load data
     root = "D:/Pycharm/Projects/pythonProject/AI/ML/Projects/Recommendation_Ecomerece/data/merged_data_second.csv"
     # Preprocess data và lấy phần dữ liệu mẫu
     df, _ = preprocess_data(root, is_encoded=True)
     print("Preprocess Complete !")
 
-    # Lọc các cột cần thiết
+    # select features
     selected_features = ["name", "product_id", "category_code", "brand", "price"]
     df_content = df[selected_features].drop_duplicates(subset=['product_id'])
     df_content = df_content.sort_values(by="product_id", ascending=False)
     print("Drop duplicate and Feature Selection Complete !")
 
-    # Gọi hàm để tạo mô hình Content-Based với ANN
+    # Content Base
     s_time = time.time()
     k = 11  # Số lượng sản phẩm tương tự
     recommendations = Content_Base_ANN_Sklearn(df_content, k=k)
@@ -62,7 +62,7 @@ if __name__ == "__main__":
     print("Train Complete !")
     print(f"Time consumed: {e_time - s_time}")
 
-    # In kết quả cho 5 sản phẩm đầu tiên
+    # Display
     for product_id, recs in list(recommendations.items())[:5]:
         print(f"Product ID: {product_id} -> Recommended Products: {recs}")
 
