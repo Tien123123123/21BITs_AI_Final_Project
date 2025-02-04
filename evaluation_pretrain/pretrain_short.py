@@ -1,10 +1,11 @@
-import os.path
+import os
 import pickle
 from process_data.preprocessing import preprocess_data
 from process_data.train_test_split import train_test_split
 from collaborative.train_model import train_model
 from evaluation_pretrain.evaluate_data import evaluate_model
 import argparse
+from minio_server.push import push_object
 
 def arg_parse():
     parser = argparse.ArgumentParser("Collaborative Pretrain Process!")
@@ -13,6 +14,8 @@ def arg_parse():
                         required=True)
     parser.add_argument("--data", "-d", type=str, default="dataset.csv", help="file path and name of dataset", required=True)
     parser.add_argument("--param", "-p", type=str, default="{'param 1': [1,2,3,4], param 2': [1,2,3,4]}", help="Parameter for SVD model", required=False)
+    parser.add_argument("--model", "-m", type=str, default="collaborative.pkl",
+                        help="model name", required=False)
     args = parser.parse_args()
     return args
 
@@ -31,10 +34,12 @@ def tracking_pretrain(args):
 
     # Save model
     if args.save:
-        save_path = "models/collaborative.pkl"
+        model_name = "collaborative.pkl" if not args.model else args.model
+        save_path = os.path.abspath(os.path.join(os.path.dirname(__file__), f"../models/{model_name}"))
         with open(save_path, 'wb') as f:
             pickle.dump(model, f)
-        if os.path.exists(save_path): print(f"Model save successfully at {save_path}")
+        if os.path.exists(save_path):
+            push_object(bucket_name=bucket_name, file_path=save_path, object_name=model_name)
 
 
 if __name__ == '__main__':
