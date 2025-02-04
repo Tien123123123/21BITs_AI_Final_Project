@@ -7,7 +7,7 @@ import pickle
 from process_data.preprocessing import preprocess_data
 
 # Function to preprocess and generate content-based similarity using ANN (Sklearn)
-def Content_Base_ANN_Sklearn(df_content, k=5):
+def content_base(df_content, k=5):
     # Xử lý dữ liệu thiếu
     df_content = df_content.fillna('')
 
@@ -48,7 +48,7 @@ if __name__ == "__main__":
     df, _ = preprocess_data(root, is_encoded=True)
     print("Preprocess Complete !")
 
-    # select features
+    # Select and Drop features for content base
     selected_features = ["name", "product_id", "category_code", "brand", "price"]
     df_content = df[selected_features].drop_duplicates(subset=['product_id'])
     df_content = df_content.sort_values(by="product_id", ascending=False)
@@ -57,12 +57,12 @@ if __name__ == "__main__":
     # Content Base
     s_time = time.time()
     k = 11  # Số lượng sản phẩm tương tự
-    recommendations = Content_Base_ANN_Sklearn(df_content, k=k)
+    recommendations = content_base(df_content, k=k)
     e_time = time.time()
     print("Train Complete !")
     print(f"Time consumed: {e_time - s_time}")
 
-    # Display
+    # Display result
     for product_id, recs in list(recommendations.items())[:5]:
         print(f"Product ID: {product_id} -> Recommended Products: {recs}")
 
