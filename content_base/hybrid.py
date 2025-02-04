@@ -1,55 +1,74 @@
-import pandas as pd
+import os.path
+import numpy as np
 from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.metrics.pairwise import cosine_similarity
-from process_data.preprocessing import preprocess_data
+from sklearn.neighbors import NearestNeighbors
+import time
 import pickle
-import os
+from process_data.preprocessing import preprocess_data
 
-def Content_Base():
-    df_content['combined_features'] = df_content['name'] + " " + df_content['category_code'] + " " + df_content['brand'] + " " + df_content['price']
-    vectorizer = TfidfVectorizer()
-    vectorizer_mat = vectorizer.fit_transform(df_content['combined_features'])
-    cos_sm_content = cosine_similarity(vectorizer_mat)
-    df_content_base = pd.DataFrame(data=cos_sm_content, index=df_content["product_id"], columns=df_content["product_id"])
-    return df_content_base
+# Function to preprocess and generate content-based similarity using ANN (Sklearn)
+def Content_Base_ANN_Sklearn(df_content, k=5):
+    # Xử lý dữ liệu thiếu
+    df_content = df_content.fillna('')
 
+    # Kết hợp các thông tin cần thiết thành một văn bản duy nhất
+    df_content['combined_features'] = (
+            df_content['name'].astype(str) + " " +
+            df_content['product_id'].astype(str) + " " +
+            df_content['category_code'].astype(str) + " " +
+            df_content['brand'].astype(str) + " " +
+            df_content['price'].astype(str)
+    )
 
-def select_top_k(recommend_type, top_k, save_path):
-    df_sim = recommend_type
-    top_k_similarity = {}
-    for p_id in df_sim.index:
-        similarity_items = df_sim.loc[p_id, :]
-        result = similarity_items.sort_values(ascending=False)
-        if p_id in result:
-            result = result.drop(p_id)
-        result = result[:top_k]
-        result = result.to_dict()
-        top_k_similarity[p_id] = result
+    # Tạo TF-IDF vector
+    vectorizer = TfidfVectorizer(max_features=5000, min_df=5, max_df=0.8)
+    tfidf_matrix = vectorizer.fit_transform(df_content['combined_features']).astype(np.float32)
 
-    # Save dict as module file
-    with open(save_path, 'wb') as f:
-        pickle.dump(top_k_similarity, f)
+    # Dùng NearestNeighbors với Ball Tree để tìm kiếm ANN
+    model = NearestNeighbors(n_neighbors=k, metric='cosine', algorithm='brute', n_jobs=-1)
+    model.fit(tfidf_matrix)
 
-    return f"Module is saved successfully at {save_path}"
+    # Tìm k sản phẩm gần nhất
+    distances, indices = model.kneighbors(tfidf_matrix)
 
-if __name__ == '__main__':
-    # Load and Preprocessing Data
-    root = "D:\Pycharm\Projects\pythonProject\AI\ML\Projects\Recommendation-Ecomerece\data/merged_data.csv"
-    df, df_weighted = preprocess_data(root, nrows=100, is_encoded=True)
-    selected_features = ["product_id", "name", "category_code", "brand"]
+    # Lưu kết quả vào dictionary
+    recommendations = {}
+    product_ids = df_content['product_id'].tolist()
+
+    for i, p_id in enumerate(product_ids):
+        recommendations[p_id] = [product_ids[idx] for idx in indices[i] if idx != i]  # Loại bỏ chính nó
+
+    return recommendations
+
+# Main Function
+if __name__ == "__main__":
+    # Load data
+    root = "D:/Pycharm/Projects/pythonProject/AI/ML/Projects/Recommendation_Ecomerece/data/merged_data_second.csv"
+    # Preprocess data và lấy phần dữ liệu mẫu
+    df, _ = preprocess_data(root, is_encoded=True)
+    print("Preprocess Complete !")
+
+    # select features
+    selected_features = ["name", "product_id", "category_code", "brand", "price"]
     df_content = df[selected_features].drop_duplicates(subset=['product_id'])
     df_content = df_content.sort_values(by="product_id", ascending=False)
+    print("Drop duplicate and Feature Selection Complete !")
 
-    # Deploy Similarity Algorithm and Save data
-    module = Content_Base()
-    top_k = 100
-    save_path = "../Project/Recommendation_Ecomerece/models/category.pkl"
-    optimized_module = select_top_k(recommend_type=module, top_k= top_k, save_path= save_path)
-    if os.path.exists(save_path):
-        print("Model saved successfully !")
-    else:
-        print("error")
-    # ID Products for testing
-    unique_product_ids = df_content['product_id'].unique()
-    unique_product_ids = unique_product_ids.tolist()
-    print(f"p_ids for texting {unique_product_ids}")
+    # Content Base
+    s_time = time.time()
+    k = 11  # Số lượng sản phẩm tương tự
+    recommendations = Content_Base_ANN_Sklearn(df_content, k=k)
+    e_time = time.time()
+    print("Train Complete !")
+    print(f"Time consumed: {e_time - s_time}")
+
+    # Display
+    for product_id, recs in list(recommendations.items())[:5]:
+        print(f"Product ID: {product_id} -> Recommended Products: {recs}")
+
+    if not os.path.exists("models/"):
+        os.makedirs("models/")
+
+    save_path = "models/content_base.pkl"
+    with open(save_path, 'wb') as f:
+        pickle.dump(recommendations, f)
