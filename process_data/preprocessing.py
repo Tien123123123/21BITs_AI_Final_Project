@@ -3,10 +3,12 @@ import numpy as np
 from sklearn.preprocessing import LabelEncoder
 from sklearn.impute import SimpleImputer
 from scipy.sparse import csr_matrix
+from minio_server.server import load_data
 
-def preprocess_data(root, nrows, is_encoded=False):
+
+def preprocess_data(bucket_name, file_name, nrows=None, is_encoded=False):
     # Load data
-    df = pd.read_csv(root, nrows=nrows)
+    df = load_data(bucket_name=bucket_name, file_name=file_name, nrows=nrows)
     df = df.replace([0, '0'], np.nan).dropna()
 
     # Adjust category code
@@ -50,10 +52,10 @@ def preprocess_data(root, nrows, is_encoded=False):
     df["total_duration"] = df.groupby(["user_id", "user_session"])["duration"].transform("sum")
 
     # Feature calculations
-    df['F1'] = df.apply(lambda row: row['is_view'] / row['total_view'] if row['total_view'] != 0 else 0, axis=1)
-    df['F2'] = df.apply(lambda row: row['is_cart'] / row['total_cart'] if row['total_cart'] != 0 else 0, axis=1)
-    df['F3'] = df.apply(lambda row: row['is_purchase'] / row['total_purchase'] if row['total_purchase'] != 0 else 0, axis=1)
-    df['F4'] = df.apply(lambda row: row['duration'] / row['total_duration'] if row['total_duration'] != 0 else 0, axis=1)
+    df['F1'] = np.where(df['total_view'] != 0, df['is_view'] / df['total_view'], 0)
+    df['F2'] = np.where(df['total_cart'] != 0, df['is_cart'] / df['total_cart'], 0)
+    df['F3'] = np.where(df['total_purchase'] != 0, df['is_purchase'] / df['total_purchase'], 0)
+    df['F4'] = np.where(df['total_duration'] != 0, df['duration'] / df['total_duration'], 0)
 
     # Calculate interest score
     initial_weights = {"F1": 0.1, "F2": 0.25, "F3": 0.45, "F4": 0.2}

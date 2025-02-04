@@ -21,7 +21,7 @@ def train_model(df_weighted, model=SVD(), param_grid=False):
         model.fit(trainset)
         results = [model.best_score["rmse"], model.best_params["rmse"], model.best_score["mae"], model.best_params["mae"]]
     elif param_grid == False:
-        model.fit(trainset)  # Sử dụng trainset ở đây
+        model.fit(trainset)
         results = cross_validate(model, data, measures=['RMSE', 'MAE'], cv=5, verbose=True)
 
     return model, results
