@@ -5,7 +5,8 @@ from surprise.accuracy import rmse, mae
 from surprise.model_selection import GridSearchCV
 from surprise.prediction_algorithms import SVD
 
-def train_model(df_weighted, model=SVD(), param_grid=False):
+
+def train_model(df_weighted, model=SVD(), param_grid=None):
     # Define rating scale
     min_score = df_weighted["score"].min()
     max_score = df_weighted["score"].max()
@@ -16,12 +17,18 @@ def train_model(df_weighted, model=SVD(), param_grid=False):
     trainset = data.build_full_trainset()
 
     if param_grid:
-        model = GridSearchCV(SVD, param_grid=param_grid, measures=["rmse", "mae"], cv=5)
+        # Perform grid search to find best parameters
+        model = GridSearchCV(SVD, param_grid=param_grid, measures=["rmse", "mae"], cv=5, refit=True)
+        model.fit(data)
+        best_rmse = model.best_score["rmse"]
+        best_params_rmse = model.best_params["rmse"]
+        best_mae = model.best_score["mae"]
+        best_params_mae = model.best_params["mae"]
+        results = [best_rmse, best_params_rmse, best_mae, best_params_mae]
+    else:
+        # Fit the model without grid search
         model.fit(trainset)
-        results = [model.best_score["rmse"], model.best_params["rmse"], model.best_score["mae"], model.best_params["mae"]]
-    elif param_grid == False:
-        model.fit(trainset)
-        results = cross_validate(model, data, measures=['RMSE', 'MAE'], cv=5, verbose=True)
+        results = cross_validate(model, data, measures=["RMSE", "MAE"], cv=5, verbose=True)
 
     return model, results
 

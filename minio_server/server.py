@@ -11,7 +11,7 @@ def load_server():
     )
     return minio_server
 
-def load_data(bucket_name, file_name, nrows):
+def load_data(bucket_name, file_name, nrows=None):
     minio_server = load_server()
 
     bucket_name = bucket_name
