@@ -3,17 +3,21 @@ from process_data.preprocessing import preprocess_data
 from process_data.train_test_split import train_test_split
 from collaborative.train_model import train_model
 
-def evaluate_model(df_test, model, top_N):
+
+def evaluate_model(df_test, df_GT, model, top_N):
     # Evaluate data
     df_test["predicted_score"] = df_test.apply(
         lambda x: model.predict(x["user_id"], x["product_id"]).est, axis=1
     )
 
-    # Reset index to avoid user_id is row and col
-    df_test = df_test.reset_index()
+    # Explicitly reset index and drop any existing index
+    df_test = df_test.reset_index(drop=True)  # Đặt lại chỉ mục (index)
+
+    # Ensure 'user_id' is not an index
+    if 'user_id' in df_test.index:  # Kiểm tra nếu 'user_id' vẫn là chỉ mục
+        df_test = df_test.reset_index(drop=True)
 
     # Take out top N products of that user
-    top_N = top_N
     df_test = (
         df_test.groupby("user_id", group_keys=False)
         .apply(lambda group: group.nlargest(top_N, "predicted_score"))
@@ -40,15 +44,15 @@ def evaluate_model(df_test, model, top_N):
 
     # Convert precision results to DataFrame
     df_metrics = pd.DataFrame(metrics_list)
-    # print(f"Mean value: {df_metrics['f1_score'].mean()}")
 
     return df_test, df_metrics, df_metrics['f1_score'].mean()
+
 
 if __name__ == '__main__':
     # Load and preprocess data
     # write data.csv on the root below
     root = "D:\Pycharm\Projects\pythonProject\AI\ML\Projects\Recommendation_Ecomerece/data/one_data.csv"
-    df, df_weighted = preprocess_data(root, nrows=1000000)
+    df, df_weighted = preprocess_data("recommendation", "dataset.csv", is_encoded=True, nrows=500000)
     df_test, df_weighted, df_GT = train_test_split(df, df_weighted)
     # Train model
     model, _ = train_model(df_weighted)

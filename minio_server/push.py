@@ -8,7 +8,7 @@ def push_object(bucket_name, file_path, object_name):
     minio_server = load_server()
 
     bucket_name = bucket_name  # bucket name
-    file_path = os.path.abspath(os.path.join(os.path.dirname(__file__), f"../{file_path}"))  # file path to upload data
+    file_path = file_path # file path to upload data
     object_name = object_name  # name of data after upload
 
     try:
