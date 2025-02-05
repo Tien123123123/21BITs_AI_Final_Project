@@ -40,9 +40,10 @@ def content_base(df_content, k=5):
 # Main Function
 if __name__ == "__main__":
     # Load data
-    root = "D:/Pycharm/Projects/pythonProject/AI/ML/Projects/Recommendation_Ecomerece/data/merged_data_second.csv"
+    bucket_name = "recommendation"
+    file_path = "dataset.csv"
     # Preprocess data và lấy phần dữ liệu mẫu
-    df, _ = preprocess_data(root, is_encoded=True)
+    df, _ = preprocess_data(bucket_name=bucket_name, file_name=file_path, is_encoded=True)
     print("Preprocess Complete !")
 
     # Select features and Drop duplicate
