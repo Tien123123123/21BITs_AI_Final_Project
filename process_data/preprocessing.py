@@ -71,4 +71,4 @@ def preprocess_data(bucket_name, file_name, nrows=None, is_encoded=False):
 if __name__ == '__main__':
     root = "data/one_data.csv" # write data in here
 
-    df_main, _ = preprocess_data(root, is_encoded=True, nrows=1000000)
+    df_main, _ = preprocess_data(root, is_encoded=True, nrows=100)
