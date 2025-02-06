@@ -24,20 +24,21 @@ def arg_parse():
     args = parser.parse_args()
     return args
 
-def tracking_pretrain(args):
+def pretrain_collaborative(args):
     # Load and Split data
     bucket_name = args.bucket
     file_name = args.data
     df, df_weighted = preprocess_data(bucket_name, file_name, is_encoded=True, nrows=500000)
     df_test, df_weighted, df_GT = train_test_split(df, df_weighted, test_size=0.1)
+    print("Data Preprocessing Complete")
     # Train model with train data
     params_dict = ast.literal_eval(args.param) if args.param else False
     model, _ = train_model(df_weighted, param_grid=params_dict)
+    print("Training Model Complete")
 
     # Evaluate model with test data
     _, _, eval = evaluate_model(df_test, df_GT, model, top_N=3)
-    print(f"eval: {eval}")
-    print(f"F1 score: {eval:.4f}")
+    print(f"F1 score after evaluation: {eval:.4f}")
 
     # Save model
     if args.save:
@@ -50,10 +51,10 @@ def tracking_pretrain(args):
             pickle.dump(model, f)
         if os.path.exists(save_path):
             print(f"Model was saved at {save_path}")
-            push_object(bucket_name=bucket_name, file_path=save_path, object_name=model_name)
+            push_object(bucket_name="models", file_path=save_path, object_name=model_name)
 
 
 if __name__ == '__main__':
     args = arg_parse()
-    print("Is running...")
-    tracking_pretrain(args)
+    print("Collaborative is running...")
+    pretrain_collaborative(args)
