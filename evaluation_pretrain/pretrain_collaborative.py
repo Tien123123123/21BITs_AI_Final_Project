@@ -12,27 +12,27 @@ from evaluation_pretrain.evaluate_data import evaluate_model
 import argparse
 from minio_server.push import push_object
 
-def arg_parse():
+def arg_parse_collaborative():
     parser = argparse.ArgumentParser("Collaborative Pretrain Process!")
     parser.add_argument("--save", "-s", type=bool, default="True", help="Save model after training and evaluating", required=False)
     parser.add_argument("--bucket", "-b", type=str, default="recommendation", help="minio bucket name",
-                        required=True)
-    parser.add_argument("--data", "-d", type=str, default="dataset.csv", help="file path and name of dataset", required=True)
+                        required=False)
+    parser.add_argument("--data", "-d", type=str, default="dataset.csv", help="file path and name of dataset", required=False)
     parser.add_argument("--param", "-p", type=str, default=False, help="Parameter for SVD model - {'param 1': [1,2,3,4], param 2': [1,2,3,4]}", required=False)
     parser.add_argument("--model", "-m", type=str, default="collaborative",
                         help="model name", required=False)
     args = parser.parse_args()
     return args
 
-def pretrain_collaborative(args):
+def pretrain_collaborative(args, bucket_name=False, dataset=False, param=False):
     # Load and Split data
-    bucket_name = args.bucket
-    file_name = args.data
-    df, df_weighted = preprocess_data(bucket_name, file_name, is_encoded=True, nrows=500000)
+    bucket_name = bucket_name if bucket_name else args.bucket
+    file_name = dataset if dataset else args.data
+    df, df_weighted = preprocess_data(bucket_name, file_name, is_encoded=True, nrows=2500000)
     df_test, df_weighted, df_GT = train_test_split(df, df_weighted, test_size=0.1)
     print("Data Preprocessing Complete")
     # Train model with train data
-    params_dict = ast.literal_eval(args.param) if args.param else False
+    params_dict = param if param == False else ast.literal_eval(args.param)
     model, _ = train_model(df_weighted, param_grid=params_dict)
     print("Training Model Complete")
 
@@ -41,20 +41,21 @@ def pretrain_collaborative(args):
     print(f"F1 score after evaluation: {eval:.4f}")
 
     # Save model
-    if args.save:
-        timezone = pytz.timezone("Asia/Ho_Chi_Minh")
-        now = datetime.now(timezone)
-        formatted_time = now.strftime("%d_%m_%y_%H_%M")
-        model_name = f"{args.model}_{formatted_time}.pkl"
-        save_path = os.path.abspath(os.path.join(os.path.dirname(__file__), f"../models/{model_name}"))
-        with open(save_path, 'wb') as f:
-            pickle.dump(model, f)
-        if os.path.exists(save_path):
-            print(f"Model was saved at {save_path}")
-            push_object(bucket_name="models", file_path=save_path, object_name=model_name)
+    timezone = pytz.timezone("Asia/Ho_Chi_Minh")
+    now = datetime.now(timezone)
+    formatted_time = now.strftime("%d_%m_%y_%H_%M")
+    model_name = f"collaborative_{formatted_time}.pkl"
+    save_path = os.path.abspath(os.path.join(os.path.dirname(__file__), f"../models/{model_name}"))
+    with open(save_path, 'wb') as f:
+        pickle.dump(model, f)
+    if os.path.exists(save_path):
+        print(f"Model was saved at {save_path}")
+        bucket_models = "models"
+        push_object(bucket_name=bucket_models, file_path=save_path, object_name=model_name)
+        # return bucket_models, model_name
 
 
 if __name__ == '__main__':
-    args = arg_parse()
+    args = arg_parse_collaborative()
     print("Collaborative is running...")
     pretrain_collaborative(args)
