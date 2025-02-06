@@ -43,7 +43,7 @@ if __name__ == "__main__":
     bucket_name = "recommendation"
     file_path = "dataset.csv"
     # Preprocess data và lấy phần dữ liệu mẫu
-    df, _ = preprocess_data(bucket_name=bucket_name, file_name=file_path, is_encoded=True)
+    df, _ = preprocess_data(bucket_name=bucket_name, file_name=file_path, is_encoded=True, nrows=1000)
     print("Preprocess Complete !")
 
     # Select features and Drop duplicate

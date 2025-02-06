@@ -28,7 +28,7 @@ def tracking_pretrain(args):
     # Load and Split data
     bucket_name = args.bucket
     file_name = args.data
-    df, df_weighted = preprocess_data(bucket_name, file_name, is_encoded=True, nrows=500000)
+    df, df_weighted = preprocess_data(bucket_name, file_name, is_encoded=True, nrows=50000)
     df_test, df_weighted, df_GT = train_test_split(df, df_weighted, test_size=0.1)
     # Train model with train data
     params_dict = ast.literal_eval(args.param) if args.param else False
