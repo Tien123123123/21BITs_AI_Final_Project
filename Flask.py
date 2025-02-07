@@ -1,19 +1,20 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import logging
-from Contentbase.hybrid_recommendation import recommendation
-from Colaborative.session_based_recommend import recommend_products
+from content_base.hybrid_recommendation import recommendation
+from collaborative.session_based_recommend import recommend_products
 import pandas as pd
 import os
 from sklearn.preprocessing import LabelEncoder
 import numpy as np
-from prometheus_flask_exporter import PrometheusMetrics
 import pickle
 from io import BytesIO
 from minio import Minio
 
+from evaluation_pretrain.pretrain_collaborative import pretrain_collaborative, arg_parse_collaborative
+from evaluation_pretrain.pretrain_contentbase import pretrain_contentbase, arg_parse_contentbase
+
 app = Flask(__name__)
-metrics = PrometheusMetrics(app, group_by='endpoint', default_latency_as_histogram=False)
 CORS(app, resources={r"/*": {"origins": "*"}})
 logging.basicConfig(level=logging.DEBUG)
 
@@ -124,9 +125,6 @@ def update_label_encoder_if_exists(encoder, value):
 # =========================
 # Endpoints
 # =========================
-@app.route('/metrics')
-def metrics_endpoint():
-    return metrics.do_export()
 
 @app.route("/health")
 def health():
@@ -236,6 +234,50 @@ def session_recommend_api():
     except Exception as e:
         logging.error(f"Error in session-recommend endpoint: {str(e)}", exc_info=True)
         return jsonify({"error": "Internal Server Error", "details": str(e)}), 500
+
+# Pretrain Process
+@app.route('/pretrain_contentbase', methods=['POST'])
+def pretrain_contentbase_api():
+    try:
+        data = request.get_json()
+
+        bucket_name = data["bucket_name"]
+        dataset = data["dataset"]
+        k = data["k_out"]
+
+        print(f"Obtain data successfully !")
+        print(f"bucket_name: {bucket_name}")
+        print(f"dataset: {dataset}")
+
+        pretrain = pretrain_contentbase(arg_parse_contentbase, bucket_name=bucket_name, dataset=dataset, k=k)
+        return jsonify({
+            "result": pretrain
+        })
+    except Exception as e:
+        return jsonify({
+            "error": str(e)
+        }), 500
+
+@app.route('/pretrain_collaborative', methods=['POST'])
+def pretrain_collaborative_api():
+    try:
+        data = request.get_json()
+
+        bucket_name = data["bucket_name"]
+        dataset = data["dataset"]
+
+        print(f"Obtain data successfully !")
+        print(f"bucket_name: {bucket_name}")
+        print(f"dataset: {dataset}")
+
+        pretrain = pretrain_collaborative(arg_parse_collaborative, bucket_name=bucket_name, dataset=dataset)
+        return jsonify({
+            "result": pretrain
+        })
+    except Exception as e:
+        return jsonify({
+            "error": str(e)
+        }), 500
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
