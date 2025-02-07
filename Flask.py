@@ -236,7 +236,7 @@ def session_recommend_api():
         return jsonify({"error": "Internal Server Error", "details": str(e)}), 500
 
 # Pretrain Process
-@app.route('pretrain_contentbase', methods=['POST'])
+@app.route('/pretrain_contentbase', methods=['POST'])
 def pretrain_contentbase_api():
     try:
         data = request.get_json()
