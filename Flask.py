@@ -10,7 +10,6 @@ import numpy as np
 import pickle
 from io import BytesIO
 from minio import Minio
-
 from evaluation_pretrain.pretrain_collaborative import pretrain_collaborative, arg_parse_collaborative
 from evaluation_pretrain.pretrain_contentbase import pretrain_contentbase, arg_parse_contentbase
 
@@ -249,7 +248,7 @@ def pretrain_contentbase_api():
         print(f"bucket_name: {bucket_name}")
         print(f"dataset: {dataset}")
 
-        pretrain = pretrain_contentbase(arg_parse_contentbase, bucket_name=bucket_name, dataset=dataset, k=k)
+        pretrain = pretrain_contentbase(arg_parse_contentbase(), bucket_name=bucket_name, dataset=dataset, k=k)
         return jsonify({
             "result": pretrain
         })
@@ -269,8 +268,7 @@ def pretrain_collaborative_api():
         print(f"Obtain data successfully !")
         print(f"bucket_name: {bucket_name}")
         print(f"dataset: {dataset}")
-
-        pretrain = pretrain_collaborative(arg_parse_collaborative, bucket_name=bucket_name, dataset=dataset)
+        pretrain = pretrain_collaborative(arg_parse_collaborative(), bucket_name=bucket_name, dataset=dataset)
         return jsonify({
             "result": pretrain
         })
