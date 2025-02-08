@@ -30,4 +30,5 @@ def train_model(df_weighted, model=SVD(), param_grid=None):
         model.fit(trainset)
         results = cross_validate(model, data, measures=["RMSE", "MAE"], cv=5, verbose=True)
 
+
     return model, results

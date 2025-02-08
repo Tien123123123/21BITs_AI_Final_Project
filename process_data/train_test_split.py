@@ -11,6 +11,7 @@ def train_test_split(df, df_weighted, test_size=0.1):
 
     # df test contain N% users purchased more than 3 items
     # df weighted contain the rest of data except users in df test
+
     df_test = df_weighted[df_weighted["user_id"].isin(user_ids)]
     df_weighted = df_weighted[~df_weighted["user_id"].isin(user_ids)]
 

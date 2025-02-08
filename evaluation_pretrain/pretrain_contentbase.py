@@ -26,7 +26,7 @@ def pretrain_contentbase(args, bucket_name=False, dataset=False, k=False):
     # Load and Split data
     bucket_name = bucket_name if bucket_name else args.bucket
     file_name = dataset if dataset else args.data
-    df, df_weighted = preprocess_data(bucket_name, file_name, is_encoded=True, nrows=100000)
+    df = preprocess_data(bucket_name, file_name, is_encoded=True, nrows=100000)
     selected_features = ["name", "product_id", "category_code", "brand", "price"]
     df_content = df[selected_features].drop_duplicates(subset=['product_id'])
     df_content = df_content.sort_values(by="product_id", ascending=False)
