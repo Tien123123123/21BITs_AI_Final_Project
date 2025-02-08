@@ -4,6 +4,8 @@ import sys
 import ast
 from datetime import datetime
 import pytz
+from torch.onnx.symbolic_opset9 import prim_type
+
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), f"../")))
 from process_data.preprocessing import preprocess_data
 from process_data.train_test_split import train_test_split
@@ -24,15 +26,17 @@ def arg_parse_collaborative():
     args = parser.parse_args()
     return args
 
-def pretrain_collaborative(args, bucket_name=False, dataset=False, param=False):
+def pretrain_collaborative(args, bucket_name=False, dataset=False):
     # Load and Split data
     bucket_name = bucket_name if bucket_name else args.bucket
     file_name = dataset if dataset else args.data
-    df, df_weighted = preprocess_data(bucket_name, file_name, is_encoded=True, nrows=2500000)
+    df, df_weighted = preprocess_data(bucket_name, file_name, is_encoded=True, nrows=500000)
     df_test, df_weighted, df_GT = train_test_split(df, df_weighted, test_size=0.1)
     print("Data Preprocessing Complete")
     # Train model with train data
-    params_dict = param if param == False else ast.literal_eval(args.param)
+    params_dict = ast.literal_eval(args.param) if args.param != False else False
+    print(params_dict)
+
     model, _ = train_model(df_weighted, param_grid=params_dict)
     print("Training Model Complete")
 

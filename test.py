@@ -1,31 +1,28 @@
-import pandas as pd
-import kagglehub
-import os
+from evaluation_pretrain.pretrain_collaborative import arg_parse_collaborative, pretrain_collaborative
+from flask import Flask, request, jsonify
 
-# Step 1: Download and load the dataset
-path = kagglehub.dataset_download("marwa80/userbehavior")
-print("Path to dataset files:", path)
+app = Flask(__name__)
 
-# Step 2: Find the CSV file in the downloaded directory
-for file in os.listdir(path):
-    if file.endswith(".csv"):
-        csv_file_path = os.path.join(path, file)
-        break
+@app.route('/pretrain_collaborative', methods=['POST'])
+def pretrain_collaborative_api():
+    try:
+        data = request.get_json()
 
-# Step 3: Load a sample of the CSV file into a DataFrame
-df = pd.read_csv(csv_file_path, nrows = 100000, fill_mean = 1)
+        bucket_name = data["bucket_name"]
+        dataset = data["dataset"]
 
-# Step 4: Rename columns based on your provided explanation
-df.columns = ['user_id', 'item_id', 'category_id', 'behavior_type', 'timestamp']
+        print(f"Obtain data successfully !")
+        print(f"bucket_name: {bucket_name}")
+        print(f"dataset: {dataset}")
 
-# Step 5: Filter data for users who have performed the 'buy' behavior at least 2 times
-user_behavior_count = df.groupby('user_id')['behavior_type'].value_counts().unstack(fill_value=0)
+        pretrain = pretrain_collaborative(arg_parse_collaborative(), bucket_name=bucket_name, dataset=dataset)
+        return jsonify({
+            "result": pretrain
+        })
+    except Exception as e:
+        return jsonify({
+            "error": str(e)
+        }), 500
 
-# Step 6: Filter users who have bought at least 2 items
-users_with_min_2_buys = user_behavior_count[user_behavior_count['buy'] >= 2]
-
-# Step 7: Show the first few users who have purchased at least 2 items
-print(users_with_min_2_buys.head())
-
-# You can also check the total number of users who meet the criteria
-print(f"Total number of users who bought at least 2 items: {len(users_with_min_2_buys)}")
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000)
