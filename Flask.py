@@ -10,8 +10,10 @@ import numpy as np
 import pickle
 from io import BytesIO
 from minio import Minio
-from evaluation_pretrain.pretrain_collaborative import pretrain_collaborative, arg_parse_collaborative
-from evaluation_pretrain.pretrain_contentbase import pretrain_contentbase, arg_parse_contentbase
+from evaluation_pretrain.pretrain_collaborative import pretrain_collaborative
+from evaluation_pretrain.pretrain_contentbase import pretrain_contentbase
+from arg_parse.arg_parse_contentbase import arg_parse_contentbase
+from arg_parse.arg_parse_collaborative import arg_parse_collaborative
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
