@@ -17,7 +17,7 @@ RUN apt-get update && \
 COPY . /app
 
 # Set Flask environment variables
-ENV FLASK_APP=online_sections.main  
+ENV FLASK_APP=Flask.py
 ENV FLASK_RUN_HOST=0.0.0.0
 ENV FLASK_RUN_PORT=5000
 
