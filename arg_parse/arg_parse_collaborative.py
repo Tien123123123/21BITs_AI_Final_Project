@@ -1,4 +1,7 @@
 import argparse
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), f"../")))
 
 def arg_parse_collaborative():
     parser = argparse.ArgumentParser("Collaborative Pretrain Process!")
@@ -9,5 +12,5 @@ def arg_parse_collaborative():
     parser.add_argument("--param", "-p", type=str, default=False, help="Parameter for SVD model - {'param 1': [1,2,3,4], param 2': [1,2,3,4]}", required=False)
     parser.add_argument("--model", "-m", type=str, default="collaborative",
                         help="model name", required=False)
-    args = parser.parse_args()
+    args = parser.parse_args(args=[])
     return args
