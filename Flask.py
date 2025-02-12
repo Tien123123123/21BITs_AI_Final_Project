@@ -15,6 +15,7 @@ from evaluation_pretrain.pretrain_contentbase import pretrain_contentbase
 from arg_parse.arg_parse_contentbase import arg_parse_contentbase
 from arg_parse.arg_parse_collaborative import arg_parse_collaborative
 import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), f"../")))
 print("Command-line arguments:", sys.argv)
 
 app = Flask(__name__)

@@ -1,4 +1,7 @@
 import argparse
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), f"../")))
 
 def arg_parse_contentbase():
     parser = argparse.ArgumentParser("Collaborative Pretrain Process!")
@@ -10,5 +13,5 @@ def arg_parse_contentbase():
                         required=False)
     parser.add_argument("-k", type=int, default=10, help="Total recommended items for a input item",
                         required=False)
-    args = parser.parse_args()
+    args = parser.parse_args(args=[])
     return args
