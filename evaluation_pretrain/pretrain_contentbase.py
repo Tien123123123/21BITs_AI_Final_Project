@@ -29,6 +29,10 @@ def pretrain_contentbase(args, bucket_name=False, dataset=False, k=False):
     now = datetime.now(timezone)
     formatted_time = now.strftime("%d_%m_%y_%H_%M")
     model_name = f"content_base_{formatted_time}.pkl"
+    save_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), f"../models"))
+    if not os.path.exists(save_dir):
+        os.makedirs(save_dir)
+        print(f"Created directory: {save_dir}")
     save_path = os.path.abspath(os.path.join(os.path.dirname(__file__), f"../models/{model_name}"))
     with open(save_path, 'wb') as f:
         pickle.dump(model, f)

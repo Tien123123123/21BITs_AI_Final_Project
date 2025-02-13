@@ -1,21 +1,23 @@
-from evaluation_pretrain.pretrain_collaborative import arg_parse_collaborative, pretrain_collaborative
+from evaluation_pretrain.pretrain_contentbase import arg_parse_contentbase, pretrain_contentbase
 from flask import Flask, request, jsonify
 
 app = Flask(__name__)
 
-@app.route('/pretrain_collaborative', methods=['POST'])
-def pretrain_collaborative_api():
+@app.route('/pretrain_contentbase', methods=['POST'])
+def pretrain_contentbase_api():
     try:
         data = request.get_json()
 
         bucket_name = data["bucket_name"]
         dataset = data["dataset"]
+        k = data["k_out"]
 
         print(f"Obtain data successfully !")
         print(f"bucket_name: {bucket_name}")
         print(f"dataset: {dataset}")
+        print(f"k: {k}")
 
-        pretrain = pretrain_collaborative(arg_parse_collaborative(), bucket_name=bucket_name, dataset=dataset)
+        pretrain = pretrain_contentbase(arg_parse_contentbase(), bucket_name=bucket_name, dataset=dataset, k=k)
         return jsonify({
             "result": pretrain
         })
