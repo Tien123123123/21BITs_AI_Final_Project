@@ -89,6 +89,7 @@ def load_dataset_from_minio(bucket_name, object_name):
         response.release_conn()
         # Convert the byte data into a pandas DataFrame
         dataset_df = pd.read_csv(BytesIO(dataset_data))
+        logging,info("loading dataset from minio")
         logging.info(f"Loaded dataset '{object_name}' from MinIO successfully.")
         return dataset_df
     except Exception as e:
