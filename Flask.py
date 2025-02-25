@@ -5,9 +5,11 @@ from content_base.hybrid_recommendation import recommendation
 from collaborative.session_based_recommend import recommend_products
 import pandas as pd
 import os
+from datetime import datetime
 from sklearn.preprocessing import LabelEncoder
 import numpy as np
 import pickle
+import re
 from io import BytesIO
 from minio import Minio
 from evaluation_pretrain.pretrain_collaborative import pretrain_collaborative
@@ -25,57 +27,117 @@ logging.basicConfig(level=logging.DEBUG)
 # =========================
 # MinIO Configuration
 # =========================
+# MinIO Configuration
 MINIO_ENDPOINT = os.getenv('MINIO_ENDPOINT', '103.155.161.94:9000')  # Replace with your endpoint
 MINIO_ACCESS_KEY = os.getenv('MINIO_ACCESS_KEY', 'minioadmin')
 MINIO_SECRET_KEY = os.getenv('MINIO_SECRET_KEY', 'minioadmin')
 MINIO_SECURE = False  # Set to True if your MinIO uses HTTPS
 
-BUCKET_NAME = 'models'             # Replace with your bucket name
-SESSION_MODEL_NAME = 'model.pkl'   # Path to the session model in your bucket
-CONTENT_MODEL_NAME = 'content_base.pkl'  # Path to the content-based model in your bucket
+BUCKET_NAME = 'models'  # Replace with your bucket name
 
+# Default models if no latest timestamped model is found
+DEFAULT_SESSION_MODEL = 'model.pkl'
+DEFAULT_CONTENT_MODEL = 'content_base.pkl'
 
-# Initialize the MinIO client
+# Initialize MinIO client
 minio_client = Minio(
     MINIO_ENDPOINT,
     access_key=MINIO_ACCESS_KEY,
     secret_key=MINIO_SECRET_KEY,
     secure=MINIO_SECURE
 )
+import re
+import logging
+
+
+def extract_timestamp(filename, prefix):
+    """
+    Extracts the timestamp from the filename using regex.
+    Expected format: prefix_DD_MM_YY_HH_MM.pkl
+    """
+    pattern = rf"{prefix}_(\d{{2}}_\d{{2}}_\d{{2}}_\d{{2}}_\d{{2}})\.pkl"
+    match = re.search(pattern, filename)
+    if match:
+        try:
+            return datetime.strptime(match.group(1), "%d_%m_%y_%H_%M")
+        except ValueError:
+            return None
+    return None
+
+def get_latest_model(bucket_name, prefix, default_model):
+    """
+    Get the latest model based on timestamp sorting.
+    """
+    try:
+        objects = list(minio_client.list_objects(bucket_name))
+        model_files = [obj.object_name for obj in objects if obj.object_name.startswith(prefix)]
+
+        logging.info(f"📂 All models with prefix '{prefix}': {model_files}")
+
+        if not model_files:
+            logging.warning(f"⚠️ No models found with prefix '{prefix}' in MinIO.")
+            return default_model
+
+        timestamped_models = []
+        for file in model_files:
+            timestamp = extract_timestamp(file, prefix)
+            logging.info(f"🔍 Checking {file}, Extracted Timestamp: {timestamp}")
+
+            if timestamp:
+                timestamped_models.append((file, timestamp))
+                logging.info(f"✅ Valid timestamp found for {file}: {timestamp}")
+            else:
+                logging.warning(f"⚠️ No valid timestamp found in file: {file}")
+
+        if timestamped_models:
+            latest_model = max(timestamped_models, key=lambda x: x[1])[0]
+            logging.info(f"🎯 Selected latest model: {latest_model}")
+            return latest_model
+
+        # If no valid timestamps were found, fallback to lexicographical sorting
+        latest_model = sorted(model_files)[-1]
+        logging.warning(f"⚠️ No valid timestamps found. Using last lexicographical file: {latest_model}")
+        return latest_model
+
+    except Exception as e:
+        logging.error(f"❌ Error finding latest model for {prefix}: {str(e)}")
+        return default_model
 
 def load_model_from_minio(bucket_name, object_name):
     """
-    Retrieve and load a pickle model from a MinIO bucket.
+    Retrieve and load a pickle model from MinIO.
     """
     try:
-        # Get the object from MinIO
         response = minio_client.get_object(bucket_name, object_name)
-        # Read the entire object data into memory
         model_data = response.read()
         response.close()
         response.release_conn()
-        # Load and return the model from the data stream
+
         model = pickle.load(BytesIO(model_data))
         logging.info(f"Loaded model '{object_name}' from MinIO successfully.")
         return model
+    except S3Error as e:
+        logging.error(f"Model '{object_name}' not found. Using default model.")
+        return None
     except Exception as e:
         logging.error(f"Error loading model '{object_name}' from MinIO: {str(e)}")
         raise
 
-# Load models from MinIO at startup
+# Determine the latest models
+latest_session_model = get_latest_model(BUCKET_NAME, "model", DEFAULT_SESSION_MODEL)
+latest_content_model = get_latest_model(BUCKET_NAME, "content_base", DEFAULT_CONTENT_MODEL)
+
+# Load the models
 try:
-    session_model = load_model_from_minio(BUCKET_NAME, SESSION_MODEL_NAME)
-    content_model = load_model_from_minio(BUCKET_NAME, CONTENT_MODEL_NAME)
+    session_model = load_model_from_minio(BUCKET_NAME, latest_session_model)
+    content_model = load_model_from_minio(BUCKET_NAME, latest_content_model)
 except Exception as e:
     logging.error("Failed to load models from MinIO. Exiting application.")
     raise
+# =========================
+# Load Dataset from MinIO
+# =========================
 
-# =========================
-# Load Dataset from MinIO
-# =========================
-# =========================
-# Load Dataset from MinIO
-# =========================
 def load_dataset_from_minio(bucket_name, object_name):
     """
     Retrieve and load a CSV dataset from a MinIO bucket.
