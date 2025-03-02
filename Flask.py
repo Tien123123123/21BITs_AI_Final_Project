@@ -3,6 +3,7 @@ from flask_cors import CORS
 import logging
 from content_base.hybrid_recommendation import recommendation
 from collaborative.session_based_recommend import recommend_products
+from collaborative.session_based_recommend import recommend_products_anonymous
 import pandas as pd
 import os
 from datetime import datetime
@@ -38,6 +39,7 @@ BUCKET_NAME = 'models'  # Replace with your bucket name
 # Default models if no latest timestamped model is found
 DEFAULT_SESSION_MODEL = 'model.pkl'
 DEFAULT_CONTENT_MODEL = 'content_base.pkl'
+DEFAULT_COLDSTART_MODEL = 'cold_start.pkl'
 
 # Initialize MinIO client
 minio_client = Minio(
@@ -126,11 +128,12 @@ def load_model_from_minio(bucket_name, object_name):
 # Determine the latest models
 latest_session_model = get_latest_model(BUCKET_NAME, "model", DEFAULT_SESSION_MODEL)
 latest_content_model = get_latest_model(BUCKET_NAME, "content_base", DEFAULT_CONTENT_MODEL)
-
+lastest_cold_start_model=get_latest_model(BUCKET_NAME,"cold_start", DEFAULT_COLDSTART_MODEL)
 # Load the models
 try:
     session_model = load_model_from_minio(BUCKET_NAME, latest_session_model)
     content_model = load_model_from_minio(BUCKET_NAME, latest_content_model)
+    cold_start = load_model_from_minio(BUCKET_NAME,lastest_cold_start_model)
 except Exception as e:
     logging.error("Failed to load models from MinIO. Exiting application.")
     raise
@@ -278,7 +281,7 @@ def session_recommend_api():
 
         # Call the session-based recommendation function using the session model loaded from MinIO.
         # (Ensure your recommend_products() function is updated to accept a model object.)
-        recommendations_df = recommend_products(session_model, df, encoded_user_id, encoded_product_id, event_type)
+        recommendations_df = recommend_products(session_model, cold_start, df, encoded_user_id, encoded_product_id, top_n=10)
         logging.info(f"Recommendations DataFrame columns: {recommendations_df.columns}")
 
         # Decode the product IDs in the recommendations
@@ -301,6 +304,55 @@ def session_recommend_api():
     except Exception as e:
         logging.error(f"Error in session-recommend endpoint: {str(e)}", exc_info=True)
         return jsonify({"error": "Internal Server Error", "details": str(e)}), 500
+
+@app.route('/anonymous-recommend', methods=['POST'])
+def anonymous_recommend_api():
+    """
+    Recommend products for anonymous (guest) users based on product_id (cold start).
+    """
+    try:
+        data = request.get_json()
+        logging.info(f"Received data for anonymous recommend: {data}")
+
+        product_id = data.get('product_id')
+
+        if product_id is None:
+            return jsonify({"error": "Missing product_id"}), 400
+
+        try:
+            product_id = int(product_id)
+        except ValueError:
+            return jsonify({"error": "product_id must be an integer"}), 400
+
+        # Encode product_id dynamically (same as session recommend)
+        try:
+            encoded_product_id = update_label_encoder(enc_product_id, product_id)
+            logging.info(f"Encoded product_id: {encoded_product_id}")
+        except Exception as e:
+            logging.error(f"Error during product_id encoding: {str(e)}")
+            return jsonify({"error": "Invalid product_id after encoding"}), 400
+
+        # Generate recommendations using the cold-start cluster-based logic
+        recommendations_df = recommend_products_anonymous(cold_start, df, encoded_product_id)
+
+        # Decode product_id back to original before returning
+        recommendations_df['product_id'] = recommendations_df['product_id'].astype(int)
+        recommendations_df['product_id'] = enc_product_id.inverse_transform(recommendations_df['product_id'])
+
+        # Convert DataFrame to a JSON-serializable list
+        recommendations = recommendations_df.to_dict(orient="records")
+
+        return jsonify({
+            "user_id": None,  # Since it's anonymous
+            "product_id": product_id,
+            "recommendations": recommendations
+        }), 200
+
+    except Exception as e:
+        logging.error(f"Error in anonymous-recommend endpoint: {str(e)}", exc_info=True)
+        return jsonify({"error": "Internal Server Error", "details": str(e)}), 500
+
+
 
 # Pretrain Process
 # @app.route('/pretrain_contentbase', methods=['POST'])
