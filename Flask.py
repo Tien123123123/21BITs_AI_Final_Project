@@ -130,6 +130,7 @@ latest_session_model = get_latest_model(BUCKET_NAME, "model", DEFAULT_SESSION_MO
 latest_content_model = get_latest_model(BUCKET_NAME, "content_base", DEFAULT_CONTENT_MODEL)
 lastest_cold_start_model=get_latest_model(BUCKET_NAME,"cold_start", DEFAULT_COLDSTART_MODEL)
 # Load the models
+
 try:
     session_model = load_model_from_minio(BUCKET_NAME, latest_session_model)
     content_model = load_model_from_minio(BUCKET_NAME, latest_content_model)
