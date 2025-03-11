@@ -15,8 +15,10 @@ from io import BytesIO
 from minio import Minio
 from evaluation_pretrain.pretrain_collaborative import pretrain_collaborative
 from evaluation_pretrain.pretrain_contentbase import pretrain_contentbase
+from evaluation_pretrain.pretrain_coldstart import train_cold_start_clusters
 from arg_parse.arg_parse_contentbase import arg_parse_contentbase
 from arg_parse.arg_parse_collaborative import arg_parse_collaborative
+from arg_parse.arg_parse_coldstart import arg_parse_coldstart
 import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), f"../")))
 print("Command-line arguments:", sys.argv)
@@ -397,6 +399,76 @@ def anonymous_recommend_api():
 #         return jsonify({
 #             "error": str(e)
 #         }), 500
+
+@app.route('/pretrain_coldstart', methods=['POST'])
+def pretrain_coldstart_api():
+    """
+    Endpoint to pretrain cold-start recommendation clusters.
+    Expects JSON with bucket_name and dataset path.
+    """
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"error": "No JSON data provided"}), 400
+
+        bucket_name = data.get("bucket_name")
+        dataset_path = data.get("dataset")
+
+        if not bucket_name or not dataset_path:
+            return jsonify({"error": "Missing bucket_name or dataset"}), 400
+
+        logging.info(f"Starting cold-start pretraining with bucket: {bucket_name}, dataset: {dataset_path}")
+
+        # Load dataset from MinIO
+        dataset_df = load_dataset_from_minio(bucket_name, dataset_path)
+
+        # Ensure required columns exist
+        if "product_id" not in dataset_df.columns or "user_session" not in dataset_df.columns:
+            return jsonify({"error": "Dataset must contain product_id and user_session columns"}), 400
+
+        # Apply label encoding if not already encoded
+        if not pd.api.types.is_numeric_dtype(dataset_df["product_id"]):
+            dataset_df["product_id"] = enc_product_id.fit_transform(dataset_df["product_id"])
+        if not pd.api.types.is_numeric_dtype(dataset_df["user_session"]):
+            dataset_df["user_session"] = enc_user_session.fit_transform(dataset_df["user_session"])
+
+        # Parse arguments and override defaults with request data
+        args = arg_parse_coldstart()
+        args.bucket = bucket_name
+        args.data = dataset_path  # Not used directly since df is passed, but kept for consistency
+        # Optionally, allow these to be overridden via JSON if desired
+        args.save = data.get("save", args.save)
+        args.model = data.get("model", args.model)
+        args.top_n = data.get("top_n", args.top_n)
+        args.random_n = data.get("random_n", args.random_n)
+
+        # Train and save the cold-start model to MinIO
+        model_path = train_cold_start_clusters(
+            args,
+            df=dataset_df,
+            bucket_name=BUCKET_NAME  # Use the 'models' bucket
+        )
+
+        # Refresh the cold_start model in memory if saved
+        if model_path:
+            global cold_start
+            latest_cold_start_model = get_latest_model(BUCKET_NAME, "cold_start", DEFAULT_COLDSTART_MODEL)
+            cold_start = load_model_from_minio(BUCKET_NAME, latest_cold_start_model)
+        else:
+            latest_cold_start_model = None  # No model saved
+
+        return jsonify({
+            "status": "success",
+            "message": "Cold-start clusters pretrained successfully" + (" (not saved)" if not model_path else ""),
+            "model_file": latest_cold_start_model if model_path else None
+        }), 200
+
+    except S3Error as e:
+        logging.error(f"MinIO error during cold-start pretraining: {str(e)}")
+        return jsonify({"error": "MinIO storage error", "details": str(e)}), 500
+    except Exception as e:
+        logging.error(f"Error in pretrain_coldstart_api: {str(e)}", exc_info=True)
+        return jsonify({"error": "Internal Server Error", "details": str(e)}), 500
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
