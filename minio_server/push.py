@@ -3,6 +3,8 @@ from minio.error import S3Error
 from datetime import datetime
 import pytz
 import os
+import logging
+logging.basicConfig(level=logging.INFO)
 
 def push_object(bucket_name, file_path, object_name):
     minio_server = load_server()
@@ -14,17 +16,17 @@ def push_object(bucket_name, file_path, object_name):
     try:
         if not minio_server.bucket_exists(bucket_name=bucket_name):
             minio_server.make_bucket(bucket_name=bucket_name)
-            print(f"bucket name {bucket_name} was created successfully !")
+            logging.info(f"bucket name {bucket_name} was created successfully !")
 
         minio_server.fput_object(
             bucket_name=bucket_name,
             object_name=object_name,
             file_path=file_path
         )
-        print(f"{file_path} was uploaded successfully in Minio Server at [ {bucket_name} -> {object_name} ]")
+        logging.info(f"{file_path} was uploaded successfully in Minio Server at [ {bucket_name} -> {object_name} ]")
 
     except S3Error as err:
-        print(err)
+        logging.info(err)
 
 if __name__ == '__main__':
     timezone = pytz.timezone("Asia/Ho_Chi_Minh")
