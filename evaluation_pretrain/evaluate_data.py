@@ -77,21 +77,9 @@ if __name__ == '__main__':
 
     df = preprocess_data(df, is_encoded=True, nrows=None)
     df, df_weighted = calc_score(df, 0.1, 0.3, 0.4, 0.2)
-    print("df")
-    print(df.head(10))
-    print("df weighted")
-    print(df_weighted.head(10))
+
     df_test, df_weighted, df_GT = train_test_split(df, df_weighted)
-    print("-"*10)
-    print("df test")
-    print(df_test.head(1))
-    print("-" * 10)
-    print("df weighted")
-    print(df_weighted.head(1))
-    print("-" * 10)
-    print("df gt")
-    print(df_GT.head(1))
-    print("-" * 10)
+
     # Train model
     model, _ = train_model(df_weighted)
     # Evaluate model
