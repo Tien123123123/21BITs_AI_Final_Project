@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 ﻿import sys, os
+=======
+import sys, os
+>>>>>>> 770a7c253170202e338aadc3c408d3854456e8e1
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), f"../")))
 from qdrant_client import QdrantClient, models
 import logging

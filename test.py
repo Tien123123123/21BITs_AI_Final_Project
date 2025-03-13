@@ -1,30 +1,7 @@
-from evaluation_pretrain.pretrain_contentbase import arg_parse_contentbase, pretrain_contentbase
-from flask import Flask, request, jsonify
+from minio_server.push import push_object
 
-app = Flask(__name__)
+model_name = "models/model_1.pkl"
 
-@app.route('/pretrain_contentbase', methods=['POST'])
-def pretrain_contentbase_api():
-    try:
-        data = request.get_json()
-
-        bucket_name = data["bucket_name"]
-        dataset = data["dataset"]
-        k = data["k_out"]
-
-        print(f"Obtain data successfully !")
-        print(f"bucket_name: {bucket_name}")
-        print(f"dataset: {dataset}")
-        print(f"k: {k}")
-
-        pretrain = pretrain_contentbase(arg_parse_contentbase(), bucket_name=bucket_name, dataset=dataset, k=k)
-        return jsonify({
-            "result": pretrain
-        })
-    except Exception as e:
-        return jsonify({
-            "error": str(e)
-        }), 500
-
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000)
+minio_bucket_name = "models"
+object_name = "test_model.pkl"
+push_object(bucket_name=minio_bucket_name, file_path=model_name, object_name=object_name)

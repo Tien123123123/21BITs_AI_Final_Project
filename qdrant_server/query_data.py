@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 ﻿from qdrant_server.server import connect_qdrant
+=======
+from qdrant_server.server import connect_qdrant
+>>>>>>> 770a7c253170202e338aadc3c408d3854456e8e1
 
 def find_vector(q_drant_end_point, q_drant_collection_name, product_id):
     client = connect_qdrant(end_point=q_drant_end_point, collection_name=q_drant_collection_name)

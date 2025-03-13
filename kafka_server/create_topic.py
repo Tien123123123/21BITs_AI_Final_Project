@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 ﻿from kafka import KafkaAdminClient
+=======
+from kafka import KafkaAdminClient
+>>>>>>> 770a7c253170202e338aadc3c408d3854456e8e1
 from kafka.admin import NewTopic
 
 
@@ -10,4 +14,8 @@ topic = NewTopic(name=topic, num_partitions=1, replication_factor=1)
 
 admin_client.create_topics(new_topics=[topic], validate_only=False)
 
+<<<<<<< HEAD
 print(f"Create topic {topic} successfully !")
+=======
+print(f"Create topic {topic} successfully !")
+>>>>>>> 770a7c253170202e338aadc3c408d3854456e8e1

@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 ﻿import sys, os
 from kafka import KafkaConsumer
 from evaluation_pretrain.pretrain_contentbase import pretrain_contentbase
@@ -6,6 +7,14 @@ from evaluation_pretrain.pretrain_coldstart import train_cold_cluster
 from arg_parse.arg_parse_contentbase import arg_parse_contentbase
 from arg_parse.arg_parse_collaborative import arg_parse_collaborative
 from arg_parse_pretrain_coldstart import arg_parse_coldstart
+=======
+import sys, os
+from kafka import KafkaConsumer
+from evaluation_pretrain.pretrain_contentbase import pretrain_contentbase
+from evaluation_pretrain.pretrain_collaborative import pretrain_collaborative
+from arg_parse.arg_parse_contentbase import arg_parse_contentbase
+from arg_parse.arg_parse_collaborative import arg_parse_collaborative
+>>>>>>> 770a7c253170202e338aadc3c408d3854456e8e1
 from kafka_server.producer import send_message
 import logging
 logging.info("Command-line arguments: " + str(sys.argv))
@@ -34,12 +43,15 @@ def kafka_consumer(topic_name, bootstrap_servers='kafka.d2f.io.vn:9092'):
                 logging.info(f"  - Status: Ready to Pretrain!")
                 pretrain_contentbase(arg_parse_contentbase, q_drant_end_point="http://103.155.161.100:6333", q_drant_collection_name="recommendation_system", minio_bucket_name = "models", k=5)
                 pretrain_collaborative(arg_parse_collaborative(), q_drant_end_point="http://103.155.161.100:6333", q_drant_collection_name="recommendation_system", minio_bucket_name = "models")
+<<<<<<< HEAD
                 model_path = train_cold_start_clusters(
                                    arg_parse_coldstart(),
                                    q_drant_end_point="http://103.155.161.100:6333",
                                    q_drant_collection_name="recommendation_system",
                                    bucket_name="models"
                                )
+=======
+>>>>>>> 770a7c253170202e338aadc3c408d3854456e8e1
                 send_message(message="Pretrain complete !")
                 logging.info("-" * 50)
             else:
