@@ -1,3 +1,7 @@
+import os, sys
+import pickle
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), f"../")))
+
 def recommendation(model, p_id, top_k=100):
     """
     Returns the top-k recommendations for a given product ID.
@@ -28,3 +32,13 @@ def recommendation(model, p_id, top_k=100):
         return {"error": "Product ID not found in the model"}
 
     return formatted_recommendations
+
+
+if __name__ == '__main__':
+    model_path = "../models/content_base_11_03_25_23_50.pkl"
+    with open(model_path, 'rb') as f:
+        model = pickle.load(f)
+    p_id = "120"
+
+    result = recommendation(model, '1004858', top_k=10)
+    print(result)

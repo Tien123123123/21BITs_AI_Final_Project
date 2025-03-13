@@ -7,7 +7,8 @@ logging.basicConfig(level=logging.INFO)
 
 def load_to_df(client, collection_name="userbehaviors_embeddings", batch_size=1000000):
     collection_info = client.get_collection(collection_name=collection_name)
-    total_points = collection_info.points_count
+    # total_points = collection_info.points_count
+    total_points = 10000
     logging.info(f"Total points: {total_points}")
 
     all_data = []
@@ -43,9 +44,17 @@ if __name__ == '__main__':
 
     client = connect_qdrant(end_point=q_drant_end_point, collection_name=q_drant_collection_name)
     df_1 = load_to_df(client=client, collection_name=q_drant_collection_name)
-    from process_data.preprocessing import preprocess_data
+    print(df_1["product_id"].head(10))
+    print(df_1.columns)
+    # from process_data.preprocessing import preprocess_data
+    #
+    # df = preprocess_data(df_1)
+    # df = df.reset_index(drop=True)
+    # df.to_csv('processed_data.csv', index=False)
 
-    df = preprocess_data(df_1)
-    df = df.reset_index(drop=True)
-    df.to_csv('processed_data.csv', index=False)
+    collection_info = client.get_collection(collection_name="recommendation_system")
+    print(collection_info)
+    scroll_result = client.scroll(collection_name="recommendation_system", limit=1, with_vectors=True)[0]
+    print(scroll_result[0].vector)  # Xem vector
+    print(scroll_result[0].payload)  # Xem payload
 
