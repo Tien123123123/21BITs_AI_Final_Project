@@ -10,7 +10,17 @@ import pickle
 import logging
 logging.info("Command-line arguments: " + str(sys.argv))
 
-def evaluate_weights(df, w1, w2, w3, w4):
+def evaluate_weights(df, w3, r2, r4, r1):
+    # Convert ratios to actual values ensuring w1 < w4 < w2 < w3
+    w2 = w3 * r2  # ensures w2 < w3 since r2 < 1
+    w4 = w2 * r4  # ensures w4 < w2 since r4 < 1
+    w1 = w4 * r1  # ensures w1 < w4 since r1 < 1
+
+    # Safety check
+    if not (w1 < w4 < w2 < w3):
+        logging.warning("Invalid weight order encountered.")
+        return -1.0  # Penalize if the order is incorrect (rare case)
+
     df_weighted = calc_score(df, w1, w2, w3, w4)
     df_test, df_weighted_split, df_GT = train_test_split(df, df_weighted)
     model_filename = "model.pkl"
@@ -22,17 +32,38 @@ def evaluate_weights(df, w1, w2, w3, w4):
     return mean_f1
 
 def optimize_and_train(df):
-    # Define weights
-    sets = {'w1': (0.1, 0.9), 'w2': (0.1, 0.9), 'w3': (0.1, 0.9), 'w4': (0.1, 0.9)}
+    # Define pbounds with the ratio 
+    pbounds = {
+        'w3': (0.6, 0.9),  # w3 is largest
+        'r2': (0.2, 1.0),  # ensures w2 < w3
+        'r4': (0.1, 1.0),  # ensures w4 < w2
+        'r1': (0.1, 1.0)   # ensures w1 < w4
+    }
 
     # Preprocess Data
     df = preprocess_data(df, is_encoded=True, nrows=None)
-    # Optimize weights
-    optimizer = BayesianOptimization(f=lambda w1, w2, w3, w4: evaluate_weights(df=df, w1=w1, w2=w2, w3=w3, w4=w4), pbounds=sets, random_state=1)
-    optimizer.maximize(init_points=1, n_iter=1)
 
-    best_weights = optimizer.max['params']
+    # Optimize weights
+    optimizer = BayesianOptimization(f=evaluate_weights, pbounds=pbounds, random_state=5)
+    optimizer.maximize(init_points=10, n_iter=20)  # 10 random + 20 optimized trials
+
+    # Get best parameters
+    best_params = optimizer.max['params']
     best_f1_score = optimizer.max['target']
+
+    # Calculate actual best weights
+    w3_opt = best_params['w3']
+    w2_opt = w3_opt * best_params['r2']
+    w4_opt = w2_opt * best_params['r4']
+    w1_opt = w4_opt * best_params['r1']
+
+    best_weights = {
+        'w1': w1_opt,
+        'w2': w2_opt,
+        'w3': w3_opt,
+        'w4': w4_opt
+    }
+
     model_filename = "model.pkl"
 
     return best_weights, best_f1_score, model_filename
