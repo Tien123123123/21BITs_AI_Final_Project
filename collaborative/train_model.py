@@ -1,3 +1,6 @@
+
+import pickle
+
 from surprise.model_selection import cross_validate
 from surprise import SVD, Dataset, Reader, accuracy
 from surprise.model_selection import train_test_split
@@ -6,7 +9,7 @@ from surprise.model_selection import GridSearchCV
 from surprise.prediction_algorithms import SVD
 
 
-def train_model(df_weighted, model=SVD(), param_grid=None):
+def train_model(df_weighted, model_file, model=SVD(), param_grid=None):
     # Define rating scale
     min_score = df_weighted["score"].min()
     max_score = df_weighted["score"].max()
@@ -30,5 +33,7 @@ def train_model(df_weighted, model=SVD(), param_grid=None):
         model.fit(trainset)
         results = cross_validate(model, data, measures=["RMSE", "MAE"], cv=5, verbose=True)
 
-
-    return model, results
+    # Save model
+    with open(model_file, "wb") as f:
+        pickle.dump(model, f)
+    print("Save Successfully!")

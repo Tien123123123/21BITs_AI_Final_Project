@@ -13,4 +13,4 @@ def calc_score(df, w1, w2, w3, w4):
                    w4 * df["F4"])
 
     df_weighted = df.groupby(["user_id", "product_id"])["score"].sum().reset_index(name="score")
-    return df ,df_weighted
+    return df_weighted

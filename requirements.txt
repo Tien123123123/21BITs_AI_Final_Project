@@ -3,7 +3,12 @@ flask_cors
 pandas
 prometheus-flask-exporter
 scikit-learn
-numpy==1.24.4
+numpy==1.26.0
+# 1.24.4 numpy
 surprise
-tensorflow>=2.13.0
+tensorflow==2.18.0
+# 2.13.0 tf
 minio
+qdrant_client
+kafka-python==2.0.2
+bayesian-optimization==2.0.3

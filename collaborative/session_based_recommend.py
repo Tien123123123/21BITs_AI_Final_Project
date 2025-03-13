@@ -2,7 +2,7 @@
 import pandas as pd
 import pickle
 import random
-
+import logging
 # Global variable to hold the current cold start cluster.
 CURRENT_COLD_CLUSTER = None
 
@@ -21,10 +21,10 @@ def recommend_products(cf_model,cold_start_clusters ,df, target_user_id, target_
     user_exists = target_user_id in cf_model.trainset._raw2inner_id_users
 
     if user_exists:
-        print("User exists. CF session based recommendation.")
+        logging.info("User exists. CF session based recommendation.")
         target_max_date = df.loc[df["product_id"] == target_product_id, "event_time"].max()
         if pd.isna(target_max_date):
-            print(f"Warning: target_product_id={target_product_id} never appeared in the data.")
+            logging.info(f"Warning: target_product_id={target_product_id} never appeared in the data.")
             return pd.DataFrame()
 
         cutoff_date = target_max_date - pd.DateOffset(months=3)
@@ -84,7 +84,7 @@ def recommend_products(cf_model,cold_start_clusters ,df, target_user_id, target_
         # Use cold start strategy for unknown users.
 
 
-        print("User not found in SVD model. Using Cold-Start Recommendation.")
+        logging.info("User not found in SVD model. Using Cold-Start Recommendation.")
         global CURRENT_COLD_CLUSTER
         if (CURRENT_COLD_CLUSTER is None or
                 (target_product_id not in CURRENT_COLD_CLUSTER.get("top", []) and
