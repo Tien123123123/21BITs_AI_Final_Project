@@ -15,31 +15,17 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 
 def train_cold_start_clusters(
     args,
-    q_drant_end_point="http://103.155.161.100:6333",
-    q_drant_collection_name="recommendation_system",
+    df,
     bucket_name=None
 ):
-    """
-    Train cold-start clusters using data from Qdrant and push to MinIO based on args.
 
-    Args:
-        args: Parsed arguments from arg_parse_coldstart
-        q_drant_end_point: Qdrant server endpoint (default: "http://103.155.161.100:6333")
-        q_drant_collection_name: Qdrant collection name (default: "recommendation_system")
-        bucket_name: MinIO bucket name to store the model (overrides args.bucket if provided)
-
-    Returns:
-        str: Path to the saved model file (if saved), None otherwise
-    """
     try:
         # Use provided bucket_name or fall back to args
         bucket_name = bucket_name if bucket_name else args.bucket
 
         # Connect to Qdrant and load data
-        logging.info(f"Connecting to Qdrant at {q_drant_end_point}...")
-        client = connect_qdrant(end_point=q_drant_end_point, collection_name=q_drant_collection_name)
-        logging.info(f"Loading data from Qdrant collection: {q_drant_collection_name}")
-        df = load_to_df(client=client, collection_name=q_drant_collection_name)
+
+
 
         # Validate DataFrame
         if df is None or df.empty:

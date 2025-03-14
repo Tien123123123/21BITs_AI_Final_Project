@@ -10,12 +10,11 @@ from process_data.optimize_weight import optimize_and_train
 import logging
 logging.basicConfig(level=logging.INFO)
 
-def pretrain_collaborative(args, q_drant_end_point="http://103.155.161.100:6333", q_drant_collection_name="recommendation_system", minio_bucket_name = "models"):
+def pretrain_collaborative(args, df , minio_bucket_name = "models"):
     # Load and Split data
-    end_point = q_drant_end_point
-    client = connect_qdrant(end_point=end_point, collection_name=q_drant_collection_name)
-    df = load_to_df(client=client, collection_name=q_drant_collection_name)
 
+
+    df=df
     # Train model with train data
     params_dict = ast.literal_eval(args.param) if args.param != False else False
     logging.info(params_dict)

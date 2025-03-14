@@ -15,11 +15,10 @@ from arg_parse.arg_parse_contentbase import arg_parse_contentbase
 import logging
 logging.basicConfig(level=logging.INFO)
 
-def pretrain_contentbase(args, q_drant_end_point, q_drant_collection_name, minio_bucket_name = "models", k=False):
+def pretrain_contentbase(args, df , minio_bucket_name = "models", k=False):
     # Load data
-    end_point = q_drant_end_point
-    client = connect_qdrant(end_point=end_point, collection_name=q_drant_collection_name)
-    df = load_to_df(client=client, collection_name=q_drant_collection_name)
+
+
 
     # Preprocess and Split data
     df = preprocess_data(df, is_encoded=False, nrows=None)
