@@ -22,8 +22,4 @@ def remove_object(bucket_name, object_name):
 if __name__ == '__main__':
     bucket_name = "recommendation"
     object_name = "uploaded_hung_2.csv"
-<<<<<<< HEAD
     remove_object(bucket_name, object_name)
-=======
-    remove_object(bucket_name, object_name)
->>>>>>> 770a7c253170202e338aadc3c408d3854456e8e1
