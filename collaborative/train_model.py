@@ -1,7 +1,3 @@
-<<<<<<< HEAD
-
-=======
->>>>>>> 770a7c253170202e338aadc3c408d3854456e8e1
 import pickle
 
 from surprise.model_selection import cross_validate
@@ -39,8 +35,4 @@ def train_model(df_weighted, model_file, model=SVD(), param_grid=None):
     # Save model
     with open(model_file, "wb") as f:
         pickle.dump(model, f)
-<<<<<<< HEAD
     print("Save Successfully!")
-=======
-    print("Save Successfully!")
->>>>>>> 770a7c253170202e338aadc3c408d3854456e8e1
