@@ -24,5 +24,9 @@ ENV FLASK_RUN_PORT=5000
 # Expose port 5000
 EXPOSE 5000
 
-# Run Flask app
-CMD ["python", "-m","kafka_server.consumer", "flask"]
+# Create a start script file
+COPY start.sh /app/start.sh
+RUN chmod +x /app/start.sh
+
+# Run both the Flask app and Kafka consumer
+CMD ["bash", "-c", "python -m kafka_server.consumer & python -m flask run"]
