@@ -11,8 +11,8 @@ def load_to_df(client, collection_name="userbehaviors_embeddings", batch_size=10
     client.http.timeout = timeout  # Set timeout in seconds (5 minutes)
 
     collection_info = client.get_collection(collection_name=collection_name)
-    total_points = collection_info.points_count
-
+    # total_points = collection_info.points_count
+    total_points = 1000000
     logging.info(f"Total points: {total_points}")
 
     all_data = []
@@ -53,9 +53,4 @@ if __name__ == '__main__':
     q_drant_collection_name = "recommendation_system"
 
     client = connect_qdrant(end_point=q_drant_end_point, collection_name=q_drant_collection_name)
-    df_1 = load_to_df(client=client, collection_name=q_drant_collection_name)
-    from process_data.preprocessing import preprocess_data
-
-    df = preprocess_data(df_1)
-    print(df["product_id"].head(10))
-    print(df["user_id"].head(10))
+    df = load_to_df(client=client, collection_name=q_drant_collection_name)

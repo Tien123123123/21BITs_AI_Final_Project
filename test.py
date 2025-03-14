@@ -1,106 +1,56 @@
-import sys, os
-from kafka import KafkaConsumer
-from evaluation_pretrain.pretrain_contentbase import pretrain_contentbase
-from evaluation_pretrain.pretrain_collaborative import pretrain_collaborative
-from arg_parse.arg_parse_contentbase import arg_parse_contentbase
-from arg_parse.arg_parse_collaborative import arg_parse_collaborative
-from kafka_server.producer import send_message
-import logging
-from qdrant_server.load_data import load_to_df
-from process_data.preprocessing import preprocess_data
-from qdrant_server.server import connect_qdrant
-import requests  # Thêm thư viện requests để gọi API
+import pickle
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../")))
+# Đường dẫn đến file .pkl chứa mô hình collaborative filtering
+file_path = "D:\Pycharm\Projects\pythonProject\AI\ML\Projects\Recommendation_Ecomerece\models/collaborative_09_03_25_22_07.pkl"
 
-def kafka_consumer(topic_name, bootstrap_servers='kafka.d2f.io.vn:9092'):
-    # Khởi tạo logging
-    logging.basicConfig(level=logging.INFO)
-    logging.info(f"Command-line arguments: {sys.argv}")
+# Tải mô hình từ file .pkl
+with open(file_path, 'rb') as file:
+    model = pickle.load(file)
 
-    # Kết nối Qdrant một lần duy nhất
-    q_drant_end_point = "http://103.155.161.100:6333"
-    q_drant_collection_name = "recommendation_system"
-    try:
-        client = connect_qdrant(end_point=q_drant_end_point, collection_name=q_drant_collection_name)
-        logging.info(f"✅ Đã kết nối đến Qdrant tại {q_drant_end_point}")
-    except Exception as e:
-        logging.error(f"❌ Lỗi khi kết nối Qdrant: {e}")
-        return
+# Kiểm tra xem mô hình có thuộc tính trainset không
+if hasattr(model, 'trainset'):
+    # Lấy tất cả user IDs từ trainset
+    # trainset.all_users() trả về internal IDs, cần chuyển về raw IDs
+    all_users = [model.trainset.to_raw_uid(inner_id) for inner_id in model.trainset.all_users()]
 
-    # Khởi tạo Kafka consumer
-    try:
-        consumer = KafkaConsumer(
-            topic_name,
-            bootstrap_servers=bootstrap_servers,
-            auto_offset_reset='latest',
-            enable_auto_commit=True,
-            group_id='my-consumer-group',
-            value_deserializer=lambda v: v.decode('utf-8') if v else None
-        )
-        logging.info(f"📡 Đang lắng nghe topic: {topic_name} để đợi message mới nhất...")
-    except Exception as e:
-        logging.error(f"❌ Lỗi khi khởi tạo Kafka consumer: {e}")
-        return
+    # In danh sách tất cả user IDs
+    print("Danh sách tất cả user đã được huấn luyện trong mô hình:")
+    for user_id in all_users:
+        print(user_id)
+    print(f"Tổng số user: {len(all_users)}")
+else:
+    print("Mô hình không chứa trainset hoặc không phải mô hình Surprise.")
 
-    # URL của Flask API (thay đổi nếu Flask chạy trên host/port khác)
-    flask_api_url = "http://localhost:5000/refresh_models"  # Điều chỉnh URL nếu cần
-
-    # Lắng nghe message mới liên tục
-    while True:
-        try:
-            for message in consumer:
-                if message.value is not None:
-                    logging.info(f"📢 Nhận được message mới nhất: {message.value}")
-                    logging.info(f"  - Topic: {message.topic}")
-                    logging.info(f"  - Partition: {message.partition}")
-                    logging.info(f"  - Offset: {message.offset}")
-                    logging.info(f"  - Key: {message.key}")
-                    logging.info(f"  - Status: Processing...")
-
-                    # Xử lý dữ liệu từ Qdrant
-                    try:
-                        df = load_to_df(client=client, collection_name=q_drant_collection_name)
-                        df = preprocess_data(df, is_encoded=False, nrows=None)
-                        logging.info("✅ Dữ liệu đã được tải và tiền xử lý thành công")
-                    except Exception as e:
-                        logging.error(f"❌ Lỗi khi tải hoặc tiền xử lý dữ liệu: {e}")
-                        continue
-
-                    # Chạy pretrain collaborative
-                    try:
-                        pretrain_collaborative(args=arg_parse_collaborative(), df=df)
-                        logging.info("✅ Đã chạy pretrain_collaborative thành công")
-                    except Exception as e:
-                        logging.error(f"❌ Lỗi khi chạy pretrain_collaborative: {e}")
-
-                    # Chạy pretrain contentbase
-                    try:
-                        pretrain_contentbase(args=arg_parse_contentbase(), df=df)
-                        logging.info("✅ Đã chạy pretrain_contentbase thành công")
-                    except Exception as e:
-                        logging.error(f"❌ Lỗi khi chạy pretrain_contentbase: {e}")
-
-                    # Gọi API /refresh_models sau khi pretrain xong
-                    try:
-                        response = requests.post(flask_api_url)
-                        if response.status_code == 200:
-                            logging.info(f"✅ Đã gọi API /refresh_models thành công: {response.json()}")
-                        else:
-                            logging.error(f"❌ Lỗi khi gọi API /refresh_models: {response.status_code} - {response.text}")
-                    except Exception as e:
-                        logging.error(f"❌ Lỗi khi gửi yêu cầu đến API /refresh_models: {e}")
-
-                    logging.info("-" * 50)
-                else:
-                    logging.info("📢 Message rỗng hoặc không có dữ liệu.")
-
-        except Exception as e:
-            logging.error(f"❌ Lỗi trong vòng lặp consumer: {e}")
-            continue
-
-if __name__ == "__main__":
-    kafka_consumer(
-        topic_name="model_retrain_event",
-        bootstrap_servers="kafka.d2f.io.vn:9092"
-    )
+# D:\Anaconda3\envs\pythonProject\python.exe D:\Pycharm\Projects\pythonProject\AI\ML\Projects\Recommendation_Ecomerece\qdrant_server\load_data.py
+# INFO:httpx:HTTP Request: GET http://103.155.161.100:6333 "HTTP/1.1 200 OK"
+# INFO:httpx:HTTP Request: GET http://103.155.161.100:6333/collections/recommendation_system/exists "HTTP/1.1 200 OK"
+# INFO:root:Connect Complete
+# INFO:httpx:HTTP Request: GET http://103.155.161.100:6333/collections/recommendation_system "HTTP/1.1 200 OK"
+# INFO:root:Total points: 100
+# INFO:httpx:HTTP Request: POST http://103.155.161.100:6333/collections/recommendation_system/points/scroll "HTTP/1.1 200 OK"
+# 0     1005158
+# 1     1307571
+# 2     6200689
+# 3     5701002
+# 4     1005209
+# 5    12202499
+# 6     1004856
+# 7    18300121
+# 8     2800623
+# 9     1004659
+# Name: product_id, dtype: int64
+# 0    574370358
+# 1    558317034
+# 2    517030456
+# 3    572621516
+# 4    579605870
+# 5    515277460
+# 6    543482644
+# 7    514017830
+# 8    572445093
+# 9    555023300
+# Name: user_id, dtype: int64
+# INFO:root:Loaded 100 of 100 points
+# INFO:root:Finished loading 100 points into DataFrame.
+#
+# Process finished with exit code 0
