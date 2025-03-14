@@ -35,10 +35,12 @@ def recommendation(model, p_id, top_k=100):
 
 
 if __name__ == '__main__':
-    model_path = "../models/content_base_11_03_25_23_50.pkl"
+    model_path = "../models/content_base_14_03_25_21_56.pkl"
     with open(model_path, 'rb') as f:
         model = pickle.load(f)
-    p_id = "120"
 
-    result = recommendation(model, '1004858', top_k=10)
-    print(result)
+    print(len(model))
+    # p_id = "120"
+    #
+    # result = recommendation(model, '1004858', top_k=10)
+    # print(result)
