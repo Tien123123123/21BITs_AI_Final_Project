@@ -25,4 +25,4 @@ ENV FLASK_RUN_PORT=5000
 EXPOSE 5000
 
 # Run Flask app
-CMD ["python", "-m", "flask", "run"]
+CMD ["python", "-m","kafka_server.consumer", "flask"]
