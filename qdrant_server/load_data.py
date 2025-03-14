@@ -1,8 +1,4 @@
-<<<<<<< HEAD
-﻿import sys, os
-=======
 import sys, os
->>>>>>> 770a7c253170202e338aadc3c408d3854456e8e1
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), f"../")))
 import pandas as pd
 from qdrant_server.server import connect_qdrant
@@ -11,12 +7,8 @@ logging.basicConfig(level=logging.INFO)
 
 def load_to_df(client, collection_name="userbehaviors_embeddings", batch_size=1000000):
     collection_info = client.get_collection(collection_name=collection_name)
-<<<<<<< HEAD
-    total_points = collection_info.points_count
-=======
     # total_points = collection_info.points_count
     total_points = 10000
->>>>>>> 770a7c253170202e338aadc3c408d3854456e8e1
     logging.info(f"Total points: {total_points}")
 
     all_data = []
@@ -52,13 +44,6 @@ if __name__ == '__main__':
 
     client = connect_qdrant(end_point=q_drant_end_point, collection_name=q_drant_collection_name)
     df_1 = load_to_df(client=client, collection_name=q_drant_collection_name)
-<<<<<<< HEAD
-    from process_data.preprocessing import preprocess_data
-
-    df = preprocess_data(df_1)
-    df = df.reset_index(drop=True)
-    df.to_csv('processed_data.csv', index=False)
-=======
     print(df_1["product_id"].head(10))
     print(df_1.columns)
     # from process_data.preprocessing import preprocess_data
@@ -72,5 +57,3 @@ if __name__ == '__main__':
     scroll_result = client.scroll(collection_name="recommendation_system", limit=1, with_vectors=True)[0]
     print(scroll_result[0].vector)  # Xem vector
     print(scroll_result[0].payload)  # Xem payload
-
->>>>>>> 770a7c253170202e338aadc3c408d3854456e8e1
