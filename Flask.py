@@ -1,3 +1,5 @@
+# Flask.py
+import threading
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import logging
@@ -21,9 +23,6 @@ from arg_parse.arg_parse_contentbase import arg_parse_contentbase
 from arg_parse.arg_parse_collaborative import arg_parse_collaborative
 from arg_parse.arg_parse_coldstart import arg_parse_coldstart
 import sys
-import threading
-from kafka import KafkaConsumer
-import time
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../")))
 print("Command-line arguments:", sys.argv)
@@ -57,8 +56,13 @@ minio_client = Minio(
     secure=MINIO_SECURE
 )
 
-# Threading lock for model updates
-model_lock = threading.Lock()
+# Threading lock for model updates (optional, can be removed if no threading is needed)
+model_lock = threading.Lock()  # Kept for consistency, but not used without periodic updates
+
+# Global model variables
+session_model = None
+content_model = None
+cold_start = None
 
 def extract_timestamp(filename, prefix):
     pattern = rf"{prefix}_(\d{{2}}_\d{{2}}_\d{{2}}_\d{{2}}_\d{{2}})\.pkl"
@@ -118,12 +122,12 @@ def load_model_from_minio(bucket_name, object_name):
         logging.error(f"Error loading model '{object_name}' from MinIO: {str(e)}")
         return None
 
-# Load initial models
-latest_session_model = get_latest_model(BUCKET_NAME, "collaborative", DEFAULT_SESSION_MODEL)
-latest_content_model = get_latest_model(BUCKET_NAME, "content_base", DEFAULT_CONTENT_MODEL)
-latest_cold_start_model = get_latest_model(BUCKET_NAME, "coldstart", DEFAULT_COLDSTART_MODEL)
-
+# Load initial models (on startup only)
 with model_lock:
+    latest_session_model = get_latest_model(BUCKET_NAME, "collaborative", DEFAULT_SESSION_MODEL)
+    latest_content_model = get_latest_model(BUCKET_NAME, "content_base", DEFAULT_CONTENT_MODEL)
+    latest_cold_start_model = get_latest_model(BUCKET_NAME, "coldstart", DEFAULT_COLDSTART_MODEL)
+
     session_model = load_model_from_minio(BUCKET_NAME, latest_session_model)
     content_model = load_model_from_minio(BUCKET_NAME, latest_content_model)
     cold_start = load_model_from_minio(BUCKET_NAME, latest_cold_start_model)
@@ -140,45 +144,37 @@ client = connect_qdrant(end_point=QDRANT_END_POINT, collection_name=QDRANT_COLLE
 df = load_to_df(client=client, collection_name=QDRANT_COLLECTION_NAME)
 # No encoding applied to df - keep product_id, user_id, user_session as strings
 
-# Kafka consumer function to update models
-def update_models_from_kafka():
-    consumer = KafkaConsumer(
-        'pretrain_complete_event',  # Changed to listen to the completion topic
-        bootstrap_servers='kafka.d2f.io.vn:9092',
-        auto_offset_reset='latest',
-        enable_auto_commit=True,
-        group_id='flask-model-updater',
-        value_deserializer=lambda v: v.decode('utf-8') if v else None
-    )
-    logging.info("📡 Kafka consumer started for model updates.")
+# Optional: Add a manual refresh endpoint to reload models
+@app.route('/refresh_models', methods=['POST'])
+def refresh_models():
+    try:
+        with model_lock:
+            global session_model, content_model, cold_start
+            latest_session_model = get_latest_model(BUCKET_NAME, "collaborative", DEFAULT_SESSION_MODEL)
+            latest_content_model = get_latest_model(BUCKET_NAME, "content_base", DEFAULT_CONTENT_MODEL)
+            latest_cold_start_model = get_latest_model(BUCKET_NAME, "coldstart", DEFAULT_COLDSTART_MODEL)
 
-    for message in consumer:
-        if message.value == "Pretrain complete!":
-            logging.info(f"📢 Received pretrain completion message: {message.value}")
-            with model_lock:
-                logging.info("🔄 Updating models with latest versions...")
-                global session_model, content_model, cold_start
-                latest_session_model = get_latest_model(BUCKET_NAME, "collaborative", DEFAULT_SESSION_MODEL)
-                latest_content_model = get_latest_model(BUCKET_NAME, "content_base", DEFAULT_CONTENT_MODEL)
-                latest_cold_start_model = get_latest_model(BUCKET_NAME, "coldstart", DEFAULT_COLDSTART_MODEL)
+            session_model = load_model_from_minio(BUCKET_NAME, latest_session_model)
+            content_model = load_model_from_minio(BUCKET_NAME, latest_content_model)
+            cold_start = load_model_from_minio(BUCKET_NAME, latest_cold_start_model)
 
-                session_model = load_model_from_minio(BUCKET_NAME, latest_session_model)
-                content_model = load_model_from_minio(BUCKET_NAME, latest_content_model)
-                cold_start = load_model_from_minio(BUCKET_NAME, latest_cold_start_model)
+            if session_model is None:
+                logging.warning("Failed to update session model.")
+            else:
+                logging.info("✅ Session model updated successfully.")
+            if content_model is None:
+                logging.warning("Failed to update content model.")
+            else:
+                logging.info("✅ Content model updated successfully.")
+            if cold_start is None:
+                logging.warning("Failed to update cold-start model.")
+            else:
+                logging.info("✅ Cold-start model updated successfully.")
 
-                if session_model is None:
-                    logging.warning("Failed to update session model.")
-                if content_model is None:
-                    logging.warning("Failed to update content model.")
-                if cold_start is None:
-                    logging.warning("Failed to update cold-start model.")
-                logging.info("✅ Models updated successfully.")
-        else:
-            logging.info(f"📢 Received non-trigger message: {message.value}")
-
-# Start Kafka consumer in a separate thread
-kafka_thread = threading.Thread(target=update_models_from_kafka, daemon=True)
-kafka_thread.start()
+        return jsonify({"status": "Models refreshed successfully"}), 200
+    except Exception as e:
+        logging.error(f"Error refreshing models: {str(e)}", exc_info=True)
+        return jsonify({"error": "Internal Server Error", "details": str(e)}), 500
 
 # Endpoints
 @app.route("/health")
@@ -292,7 +288,7 @@ def pretrain_contentbase_api():
     try:
         data = request.get_json()
         k = data["k_out"]
-        pretrain = pretrain_contentbase(arg_parse_contentbase(), QDRANT_END_POINT, QDRANT_COLLECTION_NAME, minio_bucket_name=MINIO_BUCKET_NAME, k=k)
+        pretrain = pretrain_contentbase(arg_parse_contentbase(), df, minio_bucket_name=MINIO_BUCKET_NAME, k=k)
         global content_model
         content_model = load_model_from_minio(BUCKET_NAME, pretrain[1])
         return jsonify({"result": pretrain})
@@ -303,7 +299,7 @@ def pretrain_contentbase_api():
 @app.route('/pretrain_collaborative', methods=['POST'])
 def pretrain_collaborative_api():
     try:
-        pretrain = pretrain_collaborative(arg_parse_collaborative(), QDRANT_END_POINT, QDRANT_COLLECTION_NAME, minio_bucket_name=MINIO_BUCKET_NAME)
+        pretrain = pretrain_collaborative(arg_parse_collaborative(), df, minio_bucket_name=MINIO_BUCKET_NAME)
         global session_model
         session_model = load_model_from_minio(BUCKET_NAME, pretrain[1])
         return jsonify({"result": pretrain})
@@ -328,11 +324,10 @@ def pretrain_coldstart_api():
         args.top_n = data.get("top_n", args.top_n)
         args.random_n = data.get("random_n", args.random_n)
 
-        # Train cold-start clusters (data will be fetched from Qdrant inside the function)
+        # Train cold-start clusters using the preloaded df
         model_path = train_cold_start_clusters(
             args,
-            q_drant_end_point=QDRANT_END_POINT,
-            q_drant_collection_name=QDRANT_COLLECTION_NAME,
+            df=df,
             bucket_name=BUCKET_NAME
         )
 
