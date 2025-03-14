@@ -36,8 +36,4 @@ if __name__ == '__main__':
     bucket_name = "recommendation"
     file_path = "models/test_model.pkl"
     object_name = f"test_model_{formatted_time}.pkl"
-<<<<<<< HEAD
     push_object(bucket_name, file_path, object_name)
-=======
-    push_object(bucket_name, file_path, object_name)
->>>>>>> 770a7c253170202e338aadc3c408d3854456e8e1
