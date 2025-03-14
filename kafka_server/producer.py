@@ -1,18 +1,3 @@
-<<<<<<< HEAD
-﻿from kafka import KafkaAdminClient
-from kafka.admin import NewTopic
-
-
-admin_client = KafkaAdminClient(bootstrap_servers="kafka_server.d2f.io.vn:9092", client_id='test-client')
-
-# Create topic
-topic = "model_pretrain_to_client_event"
-topic = NewTopic(name=topic, num_partitions=1, replication_factor=1)
-
-admin_client.create_topics(new_topics=[topic], validate_only=False)
-
-print(f"Create topic {topic} successfully !")
-=======
 import sys, os
 from kafka import KafkaProducer
 import logging
@@ -38,4 +23,3 @@ def send_message(server="kafka.d2f.io.vn:9092", topic="model_pretrain_to_client_
 
 if __name__ == '__main__':
     send_message()
->>>>>>> 770a7c253170202e338aadc3c408d3854456e8e1
