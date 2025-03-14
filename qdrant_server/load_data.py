@@ -2,14 +2,17 @@
 import pandas as pd
 from qdrant_client import QdrantClient
 import logging
+from qdrant_server.server import connect_qdrant
 
-def load_to_df(client, collection_name="userbehaviors_embeddings", batch_size=10000, timeout=300):
+
+def load_to_df(client, collection_name="userbehaviors_embeddings", batch_size=1000000, timeout=300):
     """Fetch data from Qdrant in batches with custom timeout."""
     # Configure client with increased timeout
     client.http.timeout = timeout  # Set timeout in seconds (5 minutes)
 
     collection_info = client.get_collection(collection_name=collection_name)
     total_points = collection_info.points_count
+
     logging.info(f"Total points: {total_points}")
 
     all_data = []
@@ -54,5 +57,5 @@ if __name__ == '__main__':
     from process_data.preprocessing import preprocess_data
 
     df = preprocess_data(df_1)
-    df = df.reset_index(drop=True)
-    df.to_csv('processed_data.csv', index=False)
+    print(df["product_id"].head(10))
+    print(df["user_id"].head(10))

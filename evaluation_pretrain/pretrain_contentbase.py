@@ -18,10 +18,8 @@ logging.basicConfig(level=logging.INFO)
 def pretrain_contentbase(args, df , minio_bucket_name = "models", k=False):
     # Load data
 
-
-
     # Preprocess and Split data
-    df = preprocess_data(df, is_encoded=False, nrows=None)
+    df = df
     selected_features = ["name", "product_id", "category_code", "brand", "price"]
     df_content = df[selected_features].drop_duplicates(subset=['product_id'])
     df_content = df_content.sort_values(by="product_id", ascending=False)

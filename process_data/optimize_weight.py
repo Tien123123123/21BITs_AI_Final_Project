@@ -13,7 +13,7 @@ logging.info("Command-line arguments: " + str(sys.argv))
 
 def optimize_and_train(df):
     # Preprocess Data
-    df = preprocess_data(df, is_encoded=True, nrows=None)
+    df = df
 
     # Define evaluate_weights as a closure to capture df
     def evaluate_weights(w3, r2, r4, r1):
@@ -47,7 +47,7 @@ def optimize_and_train(df):
 
     # Optimize weights
     optimizer = BayesianOptimization(f=evaluate_weights, pbounds=pbounds, random_state=5)
-    optimizer.maximize(init_points=10, n_iter=20)  # 10 random + 20 optimized trials
+    optimizer.maximize(init_points=1, n_iter=1)  # 10 random + 20 optimized trials
 
     # Get best parameters
     best_params = optimizer.max['params']

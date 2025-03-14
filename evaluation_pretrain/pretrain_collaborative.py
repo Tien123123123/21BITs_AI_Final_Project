@@ -13,7 +13,6 @@ logging.basicConfig(level=logging.INFO)
 def pretrain_collaborative(args, df , minio_bucket_name = "models"):
     # Load and Split data
 
-
     df=df
     # Train model with train data
     params_dict = ast.literal_eval(args.param) if args.param != False else False
@@ -42,4 +41,8 @@ if __name__ == '__main__':
     logging.info("Collaborative is running...")
     q_drant_end_point = "http://103.155.161.100:6333"
     q_drant_collection_name = "recommendation_system"
-    pretrain_collaborative(args, q_drant_end_point, q_drant_collection_name, minio_bucket_name = "models")
+
+    client = connect_qdrant(end_point=q_drant_end_point, collection_name=q_drant_collection_name)
+    df = load_to_df(client=client, collection_name=q_drant_collection_name)
+
+    pretrain_collaborative(args, df , minio_bucket_name = "models")
