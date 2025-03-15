@@ -11,6 +11,7 @@ import logging
 logging.info("Command-line arguments: " + str(sys.argv))
 
 def evaluate_weights(df, w3, r2, r4, r1):
+    df = df
     # Ensure weight order: w1 < w4 < w2 < w3
     w2 = w3 * r2
     w4 = w2 * r4
@@ -34,6 +35,7 @@ def evaluate_weights(df, w3, r2, r4, r1):
 
 def optimize_and_train(df):
     # Define bounded ratios w1 < w4 < w2 < w3
+    df= df
     pbounds = {
         'w3': (0.6, 0.9),  # w3 is the largest value
         'r2': (0.2, 1.0),  # ratio w2/w3, ensures w2 < w3
@@ -42,8 +44,8 @@ def optimize_and_train(df):
     }
 
 
-    optimizer = BayesianOptimization(f=evaluate_weights, pbounds=pbounds, random_state=5)
-    optimizer.maximize(init_points=10, n_iter=20)  # 10 random + 20 optimized trials
+    optimizer = BayesianOptimization(f=lambda w3, r2, r4, r1: evaluate_weights(df=df, w3=w3, r2=r2, r4=r4, r1=r1), pbounds=pbounds, random_state=5)
+    optimizer.maximize(init_points=1, n_iter=1)  # 10 random + 20 optimized trials
 
     best_params = optimizer.max['params']
     best_f1_score = optimizer.max['target']
