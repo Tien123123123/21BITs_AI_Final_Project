@@ -13,22 +13,7 @@ from arg_parse.arg_parse_coldstart import arg_parse_coldstart
 logging.basicConfig(level=logging.INFO)
 
 def train_cold_start_clusters(args, df, minio_bucket_name="models"):
-    """
-    Train cold-start clusters for recommendation using the provided DataFrame.
 
-    Args:
-        args: Parsed arguments from arg_parse_coldstart (contains top_n, random_n, save, model).
-        df: pandas DataFrame containing user_session and product_id columns.
-        minio_bucket_name: Name of the MinIO bucket to store the model (default: "models").
-
-    Returns:
-        tuple: (bucket_name, model_name) if successful, None otherwise.
-
-    Raises:
-        ValueError: If DataFrame is invalid or missing required columns.
-        IOError: If saving the model to disk fails.
-        Exception: For other errors during processing or MinIO upload.
-    """
     try:
         # Validate DataFrame
         if df is None or df.empty:
