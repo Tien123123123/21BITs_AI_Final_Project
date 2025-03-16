@@ -313,38 +313,25 @@ def pretrain_collaborative_api():
 @app.route('/pretrain_coldstart', methods=['POST'])
 def pretrain_coldstart_api():
     try:
+        # Parse JSON payload (for consistency, though not used)
         data = request.get_json()
-        if not data:
-            return jsonify({"error": "No JSON data provided"}), 400
 
-        bucket_name = data.get("bucket_name", MINIO_BUCKET_NAME)
-
-        logging.info(f"Starting cold-start pretraining with bucket: {bucket_name}")
-        args = arg_parse_coldstart()
-        args.bucket = bucket_name
-        args.save = data.get("save", args.save)
-        args.model = data.get("model", args.model)
-        args.top_n = data.get("top_n", args.top_n)
-        args.random_n = data.get("random_n", args.random_n)
-
-        # Train cold-start clusters using the preloaded df
-        model_path = train_cold_start_clusters(
-            args,
-            df=df,
-            bucket_name=BUCKET_NAME
+        # Call the pretraining function
+        pretrain = train_cold_start_clusters(
+            arg_parse_coldstart(),
+            df,
+            minio_bucket_name=MINIO_BUCKET_NAME
         )
 
-        return jsonify({
-            "status": "success",
-            "message": "Cold-start clusters pretrained successfully" + (" (not saved)" if not model_path else ""),
-            "model_file": os.path.basename(model_path) if model_path else None
-        }), 200
-    except S3Error as e:
-        logging.error(f"MinIO error during cold-start pretraining: {str(e)}")
-        return jsonify({"error": "MinIO storage error", "details": str(e)}), 500
+        # Update the global cold_start model
+        global cold_start
+        if pretrain:  # Only update if pretrain returned a result (i.e., args.save=True)
+            cold_start = load_model_from_minio(BUCKET_NAME, pretrain[1])
+
+        return jsonify({"result": pretrain})
     except Exception as e:
         logging.error(f"Error in pretrain_coldstart_api: {str(e)}", exc_info=True)
-        return jsonify({"error": "Internal Server Error", "details": str(e)}), 500
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)

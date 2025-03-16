@@ -15,7 +15,6 @@ logging.basicConfig(level=logging.INFO)
 def train_cold_start_clusters(args, df, minio_bucket_name="models"):
 
     try:
-        df=df
         # Validate DataFrame
         if df is None or df.empty:
             logging.error("Provided DataFrame is empty or None.")
@@ -75,11 +74,11 @@ def train_cold_start_clusters(args, df, minio_bucket_name="models"):
             raise
 
         # Push to MinIO
-        bucket_models = minio_bucket_name
-        create_bucket(bucket_models)  # Ensure the bucket exists
+        bucket_name = minio_bucket_name
+        create_bucket(bucket_name)  # Ensure the bucket exists
         try:
-            push_object(bucket_name=bucket_models, file_path=save_path, object_name=model_name)
-            logging.info(f"✅ Cold start clusters pushed to MinIO: {bucket_models}/{model_name}")
+            push_object(bucket_name=bucket_name, file_path=save_path, object_name=model_name)
+            logging.info(f"✅ Cold start clusters pushed to MinIO: {bucket_name}/{model_name}")
         except Exception as e:
             logging.error(f"❌ Failed to push to MinIO: {str(e)}")
             raise
@@ -89,7 +88,7 @@ def train_cold_start_clusters(args, df, minio_bucket_name="models"):
             os.remove(save_path)
             logging.info(f"🗑️ Local file {save_path} removed after upload")
 
-        return bucket_models, model_name
+        return bucket_name, model_name
 
     except Exception as e:
         logging.error(f"❌ Error in train_cold_start_clusters: {str(e)}")
@@ -97,11 +96,5 @@ def train_cold_start_clusters(args, df, minio_bucket_name="models"):
 
 if __name__ == "__main__":
     args = arg_parse_coldstart()
-    logging.info("Cold-start pretraining is running...")
-    q_drant_end_point = "http://103.155.161.100:6333"
-    q_drant_collection_name = "recommendation_system"
-
-    client = connect_qdrant(end_point=q_drant_end_point, collection_name=q_drant_collection_name)
-    df = load_to_df(client=client, collection_name=q_drant_collection_name)
-
-    train_cold_start_clusters(args, df, minio_bucket_name="models")
+    logging.error("Cannot run directly without providing a DataFrame (df). Please pass df as an argument.")
+    sys.exit(1)
