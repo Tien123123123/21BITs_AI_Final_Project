@@ -1,4 +1,4 @@
-﻿import pickle
+import pickle
 import random
 import os
 from datetime import datetime
