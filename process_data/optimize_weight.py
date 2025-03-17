@@ -29,9 +29,10 @@ def evaluate_weights(df, w3, r2, r4, r1):
     with open(model_filename, "rb") as f:
         model = pickle.load(f)
 
-    _, _, mean_f1 = evaluate_model(df_test, df_GT, model, top_N=3)
-    logging.info(f"Evaluating weights: w1={w1:.4f}, w2={w2:.4f}, w3={w3:.4f}, w4={w4:.4f} -> F1 Score: {mean_f1:.4f}")
-    return mean_f1
+    _, f1_score = evaluate_model(df_test, df_GT, model, top_N=3)
+    logging.info(f"Evaluating weights: w1={w1:.4f}, w2={w2:.4f}, w3={w3:.4f}, w4={w4:.4f} -> F1 Score: {f1_score:.4f}")
+    return f1_score
+
 
 def optimize_and_train(df):
     # Define bounded ratios w1 < w4 < w2 < w3
