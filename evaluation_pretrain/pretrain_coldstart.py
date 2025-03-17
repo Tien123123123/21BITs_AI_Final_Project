@@ -1,4 +1,4 @@
-﻿import pickle
+import pickle
 import random
 import os
 from datetime import datetime
@@ -7,32 +7,24 @@ import logging
 import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../")))
 from minio_server.push import push_object
-from qdrant_server.load_data import load_to_df
-from qdrant_server.server import connect_qdrant
+from minio_server.server import create_bucket
 from arg_parse.arg_parse_coldstart import arg_parse_coldstart
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.INFO)
 
-def train_cold_start_clusters(
-    args,
-    df,
-    bucket_name=None
-):
+def train_cold_start_clusters(args, df, minio_bucket_name="models"):
 
     try:
-        # Use provided bucket_name or fall back to args
-        bucket_name = bucket_name if bucket_name else args.bucket
-
         # Validate DataFrame
         if df is None or df.empty:
-            logging.error("No data retrieved from Qdrant or DataFrame is empty.")
-            raise ValueError("Failed to load data from Qdrant for cold-start training.")
+            logging.error("Provided DataFrame is empty or None.")
+            raise ValueError("DataFrame is empty or None for cold-start training.")
 
         if not all(col in df.columns for col in ["user_session", "product_id"]):
             logging.error("DataFrame must contain 'user_session' and 'product_id' columns.")
             raise ValueError("DataFrame missing required columns: 'user_session' and 'product_id'.")
 
-        logging.info(f"Data loaded successfully: {len(df)} records")
+        logging.info(f"Data validated successfully: {len(df)} records")
 
         # Group sessions: each session gives a list of unique product ids
         session_groups = df.groupby("user_session")["product_id"].apply(lambda x: list(set(x)))
@@ -66,28 +58,37 @@ def train_cold_start_clusters(
         now = datetime.now(timezone)
         formatted_time = now.strftime("%d_%m_%y_%H_%M")
         model_name = f"{args.model}_{formatted_time}.pkl"
+
         save_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../models", model_name))
 
         # Ensure the models directory exists
         os.makedirs(os.path.dirname(save_path), exist_ok=True)
 
-        # Save model locally
-        with open(save_path, "wb") as f:
-            pickle.dump(cold_start_clusters, f)
-        logging.info(f"✅ Cold start clusters saved locally to {save_path}")
+        # Save the cold_start_clusters model to disk
+        try:
+            with open(save_path, 'wb') as f:
+                pickle.dump(cold_start_clusters, f)
+            logging.info(f"Model was saved at {save_path}")
+        except IOError as e:
+            logging.error(f"❌ Failed to save model to {save_path}: {str(e)}")
+            raise
 
         # Push to MinIO
-        bucket_models = bucket_name
-        obj_name = model_name
-        push_object(bucket_name=bucket_models, file_path=save_path, object_name=obj_name)
-        logging.info(f"✅ Cold start clusters pushed to MinIO: {bucket_models}/{obj_name}")
+        bucket_name = minio_bucket_name
+        create_bucket(bucket_name)  # Ensure the bucket exists
+        try:
+            push_object(bucket_name=bucket_name, file_path=save_path, object_name=model_name)
+            logging.info(f"✅ Cold start clusters pushed to MinIO: {bucket_name}/{model_name}")
+        except Exception as e:
+            logging.error(f"❌ Failed to push to MinIO: {str(e)}")
+            raise
 
-        # Clean up local file
+        # Clean up local file only if upload succeeds
         if os.path.exists(save_path):
             os.remove(save_path)
             logging.info(f"🗑️ Local file {save_path} removed after upload")
 
-        return save_path
+        return bucket_name, model_name
 
     except Exception as e:
         logging.error(f"❌ Error in train_cold_start_clusters: {str(e)}")
@@ -95,12 +96,5 @@ def train_cold_start_clusters(
 
 if __name__ == "__main__":
     args = arg_parse_coldstart()
-    logging.info("Cold-start pretraining is running...")
-    q_drant_end_point = "http://103.155.161.100:6333"
-    q_drant_collection_name = "recommendation_system"
-    train_cold_start_clusters(
-        args,
-        q_drant_end_point=q_drant_end_point,
-        q_drant_collection_name=q_drant_collection_name,
-        bucket_name="models"
-    )
+    logging.error("Cannot run directly without providing a DataFrame (df). Please pass df as an argument.")
+    sys.exit(1)
