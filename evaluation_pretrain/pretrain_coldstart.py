@@ -23,10 +23,6 @@ def train_cold_start_clusters(
         # Use provided bucket_name or fall back to args
         bucket_name = bucket_name if bucket_name else args.bucket
 
-        # Connect to Qdrant and load data
-
-
-
         # Validate DataFrame
         if df is None or df.empty:
             logging.error("No data retrieved from Qdrant or DataFrame is empty.")
