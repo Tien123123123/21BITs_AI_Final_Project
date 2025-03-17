@@ -25,9 +25,7 @@ def pretrain_collaborative(args, df , minio_bucket_name = "models"):
     now = datetime.now(timezone)
     formatted_time = now.strftime("%d_%m_%y_%H_%M")
     model_name = f"collaborative_{formatted_time}.pkl"
-    save_path = os.path.abspath(os.path.join(os.path.dirname(__file__), f"../models/{model_name}"))
-    with open(save_path, 'wb') as f:
-        pickle.dump(model_filename, f)
+
     if os.path.exists(model_filename):
         logging.info(f"Model was saved at {model_filename}")
         bucket_models = minio_bucket_name

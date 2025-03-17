@@ -1,4 +1,3 @@
-# Flask.py
 import threading
 from flask import Flask, request, jsonify
 from flask_cors import CORS
@@ -56,8 +55,8 @@ minio_client = Minio(
     secure=MINIO_SECURE
 )
 
-# Threading lock for model updates (optional, can be removed if no threading is needed)
-model_lock = threading.Lock()  # Kept for consistency, but not used without periodic updates
+# Threading lock for model updates
+model_lock = threading.Lock()
 
 # Global model variables
 session_model = None
@@ -161,15 +160,15 @@ def refresh_models():
             if session_model is None:
                 logging.warning("Failed to update session model.")
             else:
-                logging.info("✅ Session model updated successfully.")
+                logging.info(f"✅ Session model updated successfully. Model file: {latest_session_model}")
             if content_model is None:
                 logging.warning("Failed to update content model.")
             else:
-                logging.info("✅ Content model updated successfully.")
+                logging.info(f"✅ Content model updated successfully. Model file: {latest_content_model}")
             if cold_start is None:
                 logging.warning("Failed to update cold-start model.")
             else:
-                logging.info("✅ Cold-start model updated successfully.")
+                logging.info(f"✅ Cold-start model updated successfully. Model file: {latest_cold_start_model}")
 
         return jsonify({"status": "Models refreshed successfully"}), 200
     except Exception as e:
@@ -195,6 +194,7 @@ def predict_api():
         if content_model is None:
             return jsonify({"error": "Content model not loaded"}), 503
 
+        logging.info(f"Using content model: {get_latest_model(BUCKET_NAME, 'content_base', DEFAULT_CONTENT_MODEL)}")
         recommendation_result = recommendation(content_model, product_id, top_k=10)
         logging.info(f"Raw recommendations: {recommendation_result}")
 
@@ -209,7 +209,7 @@ def predict_api():
 
         return jsonify({
             'product_id': product_id,
-            'recommendations': [{"product_id": prod_id} for prod_id in recommended_product_ids]  # Keep as strings
+            'recommendations': [{"product_id": prod_id} for prod_id in recommended_product_ids]
         }), 200
     except Exception as e:
         logging.error(f"Error in predict endpoint: {str(e)}", exc_info=True)
@@ -234,6 +234,8 @@ def session_recommend_api():
         if session_model is None or cold_start is None:
             return jsonify({"error": "Session or cold-start model not loaded"}), 503
 
+        logging.info(f"Using session model: {get_latest_model(BUCKET_NAME, 'collaborative', DEFAULT_SESSION_MODEL)}")
+        logging.info(f"Using cold-start model: {get_latest_model(BUCKET_NAME, 'coldstart', DEFAULT_COLDSTART_MODEL)}")
         recommendations_df = recommend_products(session_model, cold_start, df, user_id, product_id, top_n=10)
         if recommendations_df is None or recommendations_df.empty:
             return jsonify({"error": "No recommendations generated"}), 404
@@ -244,7 +246,7 @@ def session_recommend_api():
         return jsonify({
             "user_id": user_id,
             "product_id": product_id,
-            "recommendations": recommendations  # product_id in df remains string
+            "recommendations": recommendations
         }), 200
     except Exception as e:
         logging.error(f"Error in session-recommend endpoint: {str(e)}", exc_info=True)
@@ -266,6 +268,7 @@ def anonymous_recommend_api():
         if cold_start is None:
             return jsonify({"error": "Cold-start model not loaded"}), 503
 
+        logging.info(f"Using cold-start model: {get_latest_model(BUCKET_NAME, 'coldstart', DEFAULT_COLDSTART_MODEL)}")
         recommendations_df = recommend_products_anonymous(cold_start, df, product_id)
         if recommendations_df is None or recommendations_df.empty:
             return jsonify({"error": "No recommendations generated"}), 404
@@ -276,7 +279,7 @@ def anonymous_recommend_api():
         return jsonify({
             "user_id": None,
             "product_id": product_id,
-            "recommendations": recommendations  # product_id in df remains string
+            "recommendations": recommendations
         }), 200
     except Exception as e:
         logging.error(f"Error in anonymous-recommend endpoint: {str(e)}", exc_info=True)
@@ -310,38 +313,25 @@ def pretrain_collaborative_api():
 @app.route('/pretrain_coldstart', methods=['POST'])
 def pretrain_coldstart_api():
     try:
+        # Parse JSON payload (for consistency, though not used)
         data = request.get_json()
-        if not data:
-            return jsonify({"error": "No JSON data provided"}), 400
 
-        bucket_name = data.get("bucket_name", MINIO_BUCKET_NAME)
-
-        logging.info(f"Starting cold-start pretraining with bucket: {bucket_name}")
-        args = arg_parse_coldstart()
-        args.bucket = bucket_name
-        args.save = data.get("save", args.save)
-        args.model = data.get("model", args.model)
-        args.top_n = data.get("top_n", args.top_n)
-        args.random_n = data.get("random_n", args.random_n)
-
-        # Train cold-start clusters using the preloaded df
-        model_path = train_cold_start_clusters(
-            args,
-            df=df,
-            bucket_name=BUCKET_NAME
+        # Call the pretraining function
+        pretrain = train_cold_start_clusters(
+            arg_parse_coldstart(),
+            df,
+            minio_bucket_name=MINIO_BUCKET_NAME
         )
 
-        return jsonify({
-            "status": "success",
-            "message": "Cold-start clusters pretrained successfully" + (" (not saved)" if not model_path else ""),
-            "model_file": os.path.basename(model_path) if model_path else None
-        }), 200
-    except S3Error as e:
-        logging.error(f"MinIO error during cold-start pretraining: {str(e)}")
-        return jsonify({"error": "MinIO storage error", "details": str(e)}), 500
+        # Update the global cold_start model
+        global cold_start
+        if pretrain:  # Only update if pretrain returned a result (i.e., args.save=True)
+            cold_start = load_model_from_minio(BUCKET_NAME, pretrain[1])
+
+        return jsonify({"result": pretrain})
     except Exception as e:
         logging.error(f"Error in pretrain_coldstart_api: {str(e)}", exc_info=True)
-        return jsonify({"error": "Internal Server Error", "details": str(e)}), 500
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
