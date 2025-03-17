@@ -33,9 +33,9 @@ def optimize_and_train(df):
         train_model(df_weighted_split, model_file=model_filename)
         with open(model_filename, "rb") as f:
             model = pickle.load(f)
-        _, _, mean_f1 = evaluate_model(df_test, df_GT, model, top_N=3)
-        logging.info(f"Evaluating weights: w1={w1:.4f}, w2={w2:.4f}, w3={w3:.4f}, w4={w4:.4f} -> F1 Score: {mean_f1:.4f}")
-        return mean_f1
+        _, f1_score = evaluate_model(df_test, df_GT, model, top_N=3)
+        logging.info(f"Evaluating weights: w1={w1:.4f}, w2={w2:.4f}, w3={w3:.4f}, w4={w4:.4f} -> F1 Score: {f1_score:.4f}")
+        return f1_score
 
     # Define pbounds with the ratio
     pbounds = {
