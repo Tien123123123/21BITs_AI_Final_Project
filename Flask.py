@@ -142,7 +142,7 @@ if cold_start is None:
 # Load dataset from Qdrant
 client = connect_qdrant(end_point=QDRANT_END_POINT, collection_name=QDRANT_COLLECTION_NAME)
 df = load_to_df(client=client, collection_name=QDRANT_COLLECTION_NAME)
-# No encoding applied to df - keep product_id, user_id, user_session as strings
+
 
 # Optional: Add a manual refresh endpoint to reload models
 @app.route('/refresh_models', methods=['POST'])
