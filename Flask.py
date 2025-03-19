@@ -21,6 +21,7 @@ from evaluation_pretrain.pretrain_coldstart import train_cold_start_clusters
 from arg_parse.arg_parse_contentbase import arg_parse_contentbase
 from arg_parse.arg_parse_collaborative import arg_parse_collaborative
 from arg_parse.arg_parse_coldstart import arg_parse_coldstart
+from process_data.preprocessing import preprocess_data
 import sys
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../")))
@@ -291,6 +292,8 @@ def pretrain_contentbase_api():
     try:
         data = request.get_json()
         k = data["k_out"]
+        df = load_to_df(client=client, collection_name=QDRANT_COLLECTION_NAME)
+        df = preprocess_data(df, is_encoded=False, nrows=None)
         pretrain = pretrain_contentbase(arg_parse_contentbase(), df, minio_bucket_name=MINIO_BUCKET_NAME, k=k)
         global content_model
         content_model = load_model_from_minio(BUCKET_NAME, pretrain[1])
@@ -302,6 +305,8 @@ def pretrain_contentbase_api():
 @app.route('/pretrain_collaborative', methods=['POST'])
 def pretrain_collaborative_api():
     try:
+        df = load_to_df(client=client, collection_name=QDRANT_COLLECTION_NAME)
+        df = preprocess_data(df, is_encoded=False, nrows=None)
         pretrain = pretrain_collaborative(arg_parse_collaborative(), df, minio_bucket_name=MINIO_BUCKET_NAME)
         global session_model
         session_model = load_model_from_minio(BUCKET_NAME, pretrain[1])

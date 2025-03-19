@@ -30,7 +30,7 @@ def train_model(df_weighted, model_file, model=SVD(), param_grid=None):
     else:
         # Fit the model without grid search
         model.fit(trainset)
-        results = cross_validate(model, data, measures=["RMSE", "MAE"], cv=5, verbose=True)
+#       results = cross_validate(model, data, measures=["RMSE", "MAE"], cv=5, verbose=True)
 
     # Save model
     with open(model_file, "wb") as f:
