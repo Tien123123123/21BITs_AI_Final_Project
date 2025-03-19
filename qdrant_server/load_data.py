@@ -11,8 +11,8 @@ def load_to_df(client, collection_name="userbehaviors_embeddings", batch_size=10
     client.http.timeout = timeout  # Set timeout in seconds (5 minutes)
 
     collection_info = client.get_collection(collection_name=collection_name)
-    # total_points = collection_info.points_count
-    total_points = 1000000
+    total_points = collection_info.points_count
+#     total_points = 1000000
     logging.info(f"Total points: {total_points}")
 
     all_data = []
