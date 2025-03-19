@@ -117,6 +117,7 @@ def kafka_consumer(topic_name, bootstrap_servers='kafka.d2f.io.vn:9092', flask_u
                             try:
                                 # Kết nối Qdrant và xử lý dữ liệu
                                 df = load_to_df(client=client, collection_name=q_drant_collection_name)
+                                df1=df.copy()
                                 df = preprocess_data(df, is_encoded=False, nrows=None)
 
                                 logging.info(f"Data loading and preprocessing took {(datetime.utcnow() - start_time).total_seconds()} seconds")
@@ -133,7 +134,8 @@ def kafka_consumer(topic_name, bootstrap_servers='kafka.d2f.io.vn:9092', flask_u
 
                                 # Pretrain coldstart
                                 start_pretrain = datetime.utcnow()
-                                train_cold_start_clusters(args=arg_parse_coldstart(), df=df)
+
+                                train_cold_start_clusters(args=arg_parse_coldstart(), df=df1)
                                 logging.info(f"pretrain_contentbase took {(datetime.utcnow() - start_pretrain).total_seconds()} seconds")
 
 

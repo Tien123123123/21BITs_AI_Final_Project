@@ -16,6 +16,7 @@ def train_cold_start_clusters(args, df, minio_bucket_name="models"):
 
     try:
         # Validate DataFrame
+        df = df
         if df is None or df.empty:
             logging.error("Provided DataFrame is empty or None.")
             raise ValueError("DataFrame is empty or None for cold-start training.")
