@@ -9,7 +9,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../")))
 from minio_server.push import push_object
 from minio_server.server import create_bucket
 from arg_parse.arg_parse_coldstart import arg_parse_coldstart
-
+from process_data.preprocessing import preprocess_data
 logging.basicConfig(level=logging.INFO)
 
 def train_cold_start_clusters(args, df, minio_bucket_name="models"):
@@ -17,6 +17,9 @@ def train_cold_start_clusters(args, df, minio_bucket_name="models"):
     try:
         # Validate DataFrame
         df = df
+
+        logging.info(f"Data validated successfully: {len(df)} records")
+
         if df is None or df.empty:
             logging.error("Provided DataFrame is empty or None.")
             raise ValueError("DataFrame is empty or None for cold-start training.")
@@ -25,8 +28,11 @@ def train_cold_start_clusters(args, df, minio_bucket_name="models"):
             logging.error("DataFrame must contain 'user_session' and 'product_id' columns.")
             raise ValueError("DataFrame missing required columns: 'user_session' and 'product_id'.")
 
-        logging.info(f"Data validated successfully: {len(df)} records")
-
+        logging.info(f"Data validated after preprocessing successfully: {len(df)} records")
+        unique_users= df['user_id'].nunique()
+        logging.info(f"unique user: {unique_users}")
+        unique_products= df['product_id'].nunique()
+        logging.info(f"unique product: {unique_products}")
         # Group sessions: each session gives a list of unique product ids
         session_groups = df.groupby("user_session")["product_id"].apply(lambda x: list(set(x)))
 

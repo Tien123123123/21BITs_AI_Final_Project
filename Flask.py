@@ -142,8 +142,12 @@ if cold_start is None:
 # Load dataset from Qdrant
 client = connect_qdrant(end_point=QDRANT_END_POINT, collection_name=QDRANT_COLLECTION_NAME)
 df = load_to_df(client=client, collection_name=QDRANT_COLLECTION_NAME)
-
-
+df = preprocess_data(df, is_encoded=False, nrows=None)
+logging.info(f"Data validated after preprocessing successfully: {len(df)} records")
+unique_users= df['user_id'].nunique()
+logging.info(f"unique user after preprocessing: {unique_users}")
+unique_products= df['product_id'].nunique()
+logging.info(f"unique product after preprocessing: {unique_products}")
 # Optional: Add a manual refresh endpoint to reload models
 @app.route('/refresh_models', methods=['POST'])
 def refresh_models():
