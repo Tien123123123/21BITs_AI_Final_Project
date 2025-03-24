@@ -6,10 +6,11 @@ from surprise.model_selection import train_test_split
 from surprise.accuracy import rmse, mae
 from surprise.model_selection import GridSearchCV
 from surprise.prediction_algorithms import SVD
-
+import logging
 
 def train_model(df_weighted, model_file, model=SVD(), param_grid=None):
     # Define rating scale
+    logging.info("pretraining collaborative")
     min_score = df_weighted["score"].min()
     max_score = df_weighted["score"].max()
     reader = Reader(rating_scale=(min_score, max_score))

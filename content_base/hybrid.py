@@ -5,9 +5,10 @@ from sklearn.neighbors import NearestNeighbors
 import time
 import pickle
 from process_data.preprocessing import preprocess_data
-
+import logging
 # Function to preprocess and generate content-based similarity using ANN (Sklearn)
 def content_base(df_content, k=5):
+    logging.info("pretraing content_base")
     # Kết hợp các thông tin cần thiết thành một văn bản duy nhất
     df_content['combined_features'] = (
             df_content['name'].astype(str) + " " +
@@ -20,7 +21,7 @@ def content_base(df_content, k=5):
     # Vectorize data
     vectorizer = TfidfVectorizer(max_features=5000, min_df=5, max_df=0.8)
     tfidf_matrix = vectorizer.fit_transform(df_content['combined_features']).astype(np.float32)
-
+    logging.info("training...")
     # Model
     model = NearestNeighbors(n_neighbors=k+1, metric='cosine', algorithm='brute', n_jobs=-1)
     model.fit(tfidf_matrix)
