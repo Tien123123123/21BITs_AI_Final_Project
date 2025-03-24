@@ -131,23 +131,20 @@ def kafka_consumer(topic_name, bootstrap_servers='kafka.d2f.io.vn:9092', flask_u
                                 logging.info(f"unique product after preprocessing: {unique_products}")
                                 logging.info(f"Data loading and preprocessing took {(datetime.utcnow() - start_time).total_seconds()} seconds")
 
-                                # Pretrain collaborative
-                                start_pretrain = datetime.utcnow()
-                                pretrain_collaborative(args=arg_parse_collaborative(), df=df)
-                                logging.info(f"pretrain_collaborative took {(datetime.utcnow() - start_pretrain).total_seconds()} seconds")
-
                                 # Pretrain contentbase
                                 start_pretrain = datetime.utcnow()
                                 pretrain_contentbase(args=arg_parse_contentbase(), df=df)
                                 logging.info(f"pretrain_contentbase took {(datetime.utcnow() - start_pretrain).total_seconds()} seconds")
 
+                                # Pretrain collaborative
+                                start_pretrain = datetime.utcnow()
+                                pretrain_collaborative(args=arg_parse_collaborative(), df=df)
+                                logging.info(f"pretrain_collaborative took {(datetime.utcnow() - start_pretrain).total_seconds()} seconds")
+
                                 # Pretrain coldstart
                                 start_pretrain = datetime.utcnow()
-
                                 train_cold_start_clusters(args=arg_parse_coldstart(), df=df)
                                 logging.info(f"pretrain_contentbase took {(datetime.utcnow() - start_pretrain).total_seconds()} seconds")
-
-
                                 logging.info(f"Total pretraining process took {(datetime.utcnow() - start_time).total_seconds()} seconds")
 
                                 # Call /refresh_models endpoint after successful pretraining

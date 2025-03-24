@@ -4,14 +4,22 @@ FROM python:3.11
 # Set working directory
 WORKDIR /app
 
-# Copy requirements file and install dependencies
+# Copy requirements file before installing dependencies
 COPY requirements.txt /app/
 
+# Install uv and dependencies in a single RUN command
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends gcc && \
-    pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt && \
-    apt-get remove -y gcc && rm -rf /var/lib/apt/lists/*
+    apt-get install -y --no-install-recommends curl gcc && \
+    curl -LsSf https://astral.sh/uv/install.sh | sh || { echo "Failed to install uv"; exit 1; } && \
+    export PATH="/root/.local/bin:$PATH" && \
+    which uv || { echo "uv not found in PATH"; exit 1; } && \
+    uv --version && \
+    uv pip install --system -r requirements.txt && \
+    apt-get remove -y curl gcc && \
+    rm -rf /var/lib/apt/lists/* /root/.local/bin/.tmp*
+
+# Ensure uv is available in the final container environment
+ENV PATH="/root/.local/bin:$PATH"
 
 # Copy application files
 COPY . /app

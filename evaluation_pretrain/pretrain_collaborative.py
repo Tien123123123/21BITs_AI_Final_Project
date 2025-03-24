@@ -12,7 +12,7 @@ logging.basicConfig(level=logging.INFO)
 
 def pretrain_collaborative(args, df , minio_bucket_name = "models"):
     # Load and Split data
-
+    logging.info("start pretrain_collaborative")
     df=df
     # Train model with train data
     params_dict = ast.literal_eval(args.param) if args.param != False else False
