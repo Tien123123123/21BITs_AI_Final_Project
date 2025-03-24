@@ -12,3 +12,7 @@ services:
     volumes:
       - .:/app
     restart: always
+
+networks:
+  shared-network:
+    external: true
