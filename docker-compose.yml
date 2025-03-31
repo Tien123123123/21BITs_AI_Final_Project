@@ -12,6 +12,8 @@ services:
     volumes:
       - .:/app
     restart: always
+    networks:
+      - shared-network
 
 networks:
   shared-network:

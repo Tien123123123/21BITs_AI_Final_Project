@@ -32,10 +32,10 @@ CORS(app, resources={r"/*": {"origins": "*"}})
 logging.basicConfig(level=logging.DEBUG)
 
 # MinIO Configuration
-MINIO_ENDPOINT = os.getenv('MINIO_ENDPOINT', 'minio.d2f.io.vn')
+MINIO_ENDPOINT = os.getenv('MINIO_ENDPOINT', '103.155.161.100:9000')
 MINIO_ACCESS_KEY = os.getenv('MINIO_ACCESS_KEY', 'minioadmin')
 MINIO_SECRET_KEY = os.getenv('MINIO_SECRET_KEY', 'minioadmin')
-MINIO_SECURE = True
+MINIO_SECURE = False
 BUCKET_NAME = 'models'
 
 # Default models
@@ -45,7 +45,7 @@ DEFAULT_COLDSTART_MODEL = 'coldstart.pkl'
 
 # Qdrant Configuration
 QDRANT_END_POINT = "http://103.155.161.100:6333"
-QDRANT_COLLECTION_NAME = "recommendation_system"
+QDRANT_COLLECTION_NAME = "test_collection"
 MINIO_BUCKET_NAME = "models"
 
 # Initialize MinIO client
