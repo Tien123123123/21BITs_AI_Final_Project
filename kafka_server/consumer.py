@@ -18,7 +18,7 @@ from qdrant_server.server import connect_qdrant
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../")))
 
-def kafka_consumer(topic_name, bootstrap_servers='kafka.d2f.io.vn:9092', flask_url='http://localhost:5000'):
+def kafka_consumer(topic_name, bootstrap_servers='103.155.161.100:9092', flask_url='http://localhost:5000'):
     # Khởi tạo logging
     logging.basicConfig(
         level=logging.INFO,
