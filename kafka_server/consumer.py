@@ -15,10 +15,17 @@ import logging
 from qdrant_server.load_data import load_to_df
 from process_data.preprocessing import preprocess_data
 from qdrant_server.server import connect_qdrant
+from dotenv import load_dotenv
 
+load_dotenv()
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../")))
 
-def kafka_consumer(topic_name, bootstrap_servers='103.155.161.100:9092', flask_url='http://localhost:5000'):
+KAFKA_END_POINT = os.getenv('KAFKA_END_POINT', 'kafka.d2f.io.vn:9092')
+FLASK_END_POINT = os.getenv('FLASK_END_POINT', 'http://localhost:5000')
+QDRANT_END_POINT = os.getenv('QDRANT_END_POINT', 'http://103.155.161.100:6333')
+QDRANT_COLLECTION_NAME = os.getenv('QDRANT_COLLECTION_NAME', 'test_collection')
+
+def kafka_consumer(topic_name, bootstrap_servers=KAFKA_END_POINT, flask_url=FLASK_END_POINT):
     # Khởi tạo logging
     logging.basicConfig(
         level=logging.INFO,
@@ -28,8 +35,8 @@ def kafka_consumer(topic_name, bootstrap_servers='103.155.161.100:9092', flask_u
     logging.info(f"Command-line arguments: {sys.argv}")
 
     # Kết nối Qdrant một lần duy nhất
-    q_drant_end_point = "http://103.155.161.100:6333"
-    q_drant_collection_name = "recommendation_system"
+    q_drant_end_point = QDRANT_END_POINT
+    q_drant_collection_name = QDRANT_COLLECTION_NAME
     try:
         client = connect_qdrant(end_point=q_drant_end_point, collection_name=q_drant_collection_name)
         logging.info(f"✅ Đã kết nối đến Qdrant tại {q_drant_end_point}")
@@ -172,9 +179,3 @@ def kafka_consumer(topic_name, bootstrap_servers='103.155.161.100:9092', flask_u
             consumer.commit()
             continue
 
-if __name__ == "__main__":
-    kafka_consumer(
-        topic_name="model_retrain_event",
-        bootstrap_servers="kafka.d2f.io.vn:9092",
-        flask_url="http://localhost:5000"  # Adjust this URL if Flask runs on a different host/port
-    )

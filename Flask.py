@@ -22,7 +22,9 @@ from arg_parse.arg_parse_contentbase import arg_parse_contentbase
 from arg_parse.arg_parse_collaborative import arg_parse_collaborative
 from arg_parse.arg_parse_coldstart import arg_parse_coldstart
 from process_data.preprocessing import preprocess_data
-import sys
+import sys, os
+from dotenv import load_dotenv
+load_dotenv()
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../")))
 print("Command-line arguments:", sys.argv)
@@ -36,7 +38,7 @@ MINIO_ENDPOINT = os.getenv('MINIO_ENDPOINT', '103.155.161.100:9000')
 MINIO_ACCESS_KEY = os.getenv('MINIO_ACCESS_KEY', 'minioadmin')
 MINIO_SECRET_KEY = os.getenv('MINIO_SECRET_KEY', 'minioadmin')
 MINIO_SECURE = False
-BUCKET_NAME = 'models'
+MINIO_BUCKET_NAME = "models"
 
 # Default models
 DEFAULT_SESSION_MODEL = 'collaborative.pkl'
@@ -44,9 +46,8 @@ DEFAULT_CONTENT_MODEL = 'content_base.pkl'
 DEFAULT_COLDSTART_MODEL = 'coldstart.pkl'
 
 # Qdrant Configuration
-QDRANT_END_POINT = "http://103.155.161.100:6333"
-QDRANT_COLLECTION_NAME = "test_collection"
-MINIO_BUCKET_NAME = "models"
+QDRANT_END_POINT = os.getenv('QDRANT_END_POINT', 'http://103.155.161.100:6333')
+QDRANT_COLLECTION_NAME = os.getenv('QDRANT_COLLECTION_NAME', 'test_collection')
 
 # Initialize MinIO client
 minio_client = Minio(
@@ -124,13 +125,13 @@ def load_model_from_minio(bucket_name, object_name):
 
 # Load initial models (on startup only)
 with model_lock:
-    latest_session_model = get_latest_model(BUCKET_NAME, "collaborative", DEFAULT_SESSION_MODEL)
-    latest_content_model = get_latest_model(BUCKET_NAME, "content_base", DEFAULT_CONTENT_MODEL)
-    latest_cold_start_model = get_latest_model(BUCKET_NAME, "coldstart", DEFAULT_COLDSTART_MODEL)
+    latest_session_model = get_latest_model(MINIO_BUCKET_NAME , "collaborative", DEFAULT_SESSION_MODEL)
+    latest_content_model = get_latest_model(MINIO_BUCKET_NAME , "content_base", DEFAULT_CONTENT_MODEL)
+    latest_cold_start_model = get_latest_model(MINIO_BUCKET_NAME, "coldstart", DEFAULT_COLDSTART_MODEL)
 
-    session_model = load_model_from_minio(BUCKET_NAME, latest_session_model)
-    content_model = load_model_from_minio(BUCKET_NAME, latest_content_model)
-    cold_start = load_model_from_minio(BUCKET_NAME, latest_cold_start_model)
+    session_model = load_model_from_minio(MINIO_BUCKET_NAME, latest_session_model)
+    content_model = load_model_from_minio(MINIO_BUCKET_NAME, latest_content_model)
+    cold_start = load_model_from_minio(MINIO_BUCKET_NAME, latest_cold_start_model)
 
 if session_model is None:
     logging.warning("Session model is None.")
@@ -154,13 +155,13 @@ def refresh_models():
     try:
         with model_lock:
             global session_model, content_model, cold_start
-            latest_session_model = get_latest_model(BUCKET_NAME, "collaborative", DEFAULT_SESSION_MODEL)
-            latest_content_model = get_latest_model(BUCKET_NAME, "content_base", DEFAULT_CONTENT_MODEL)
-            latest_cold_start_model = get_latest_model(BUCKET_NAME, "coldstart", DEFAULT_COLDSTART_MODEL)
+            latest_session_model = get_latest_model(MINIO_BUCKET_NAME, "collaborative", DEFAULT_SESSION_MODEL)
+            latest_content_model = get_latest_model(MINIO_BUCKET_NAME, "content_base", DEFAULT_CONTENT_MODEL)
+            latest_cold_start_model = get_latest_model(MINIO_BUCKET_NAME, "coldstart", DEFAULT_COLDSTART_MODEL)
 
-            session_model = load_model_from_minio(BUCKET_NAME, latest_session_model)
-            content_model = load_model_from_minio(BUCKET_NAME, latest_content_model)
-            cold_start = load_model_from_minio(BUCKET_NAME, latest_cold_start_model)
+            session_model = load_model_from_minio(MINIO_BUCKET_NAME, latest_session_model)
+            content_model = load_model_from_minio(MINIO_BUCKET_NAME, latest_content_model)
+            cold_start = load_model_from_minio(MINIO_BUCKET_NAME, latest_cold_start_model)
 
             if session_model is None:
                 logging.warning("Failed to update session model.")
@@ -199,7 +200,7 @@ def predict_api():
         if content_model is None:
             return jsonify({"error": "Content model not loaded"}), 503
 
-        logging.info(f"Using content model: {get_latest_model(BUCKET_NAME, 'content_base', DEFAULT_CONTENT_MODEL)}")
+        logging.info(f"Using content model: {get_latest_model(MINIO_BUCKET_NAME, 'content_base', DEFAULT_CONTENT_MODEL)}")
         recommendation_result = recommendation(content_model, product_id, top_k=10)
         logging.info(f"Raw recommendations: {recommendation_result}")
 
@@ -239,8 +240,8 @@ def session_recommend_api():
         if session_model is None or cold_start is None:
             return jsonify({"error": "Session or cold-start model not loaded"}), 503
 
-        logging.info(f"Using session model: {get_latest_model(BUCKET_NAME, 'collaborative', DEFAULT_SESSION_MODEL)}")
-        logging.info(f"Using cold-start model: {get_latest_model(BUCKET_NAME, 'coldstart', DEFAULT_COLDSTART_MODEL)}")
+        logging.info(f"Using session model: {get_latest_model(MINIO_BUCKET_NAME, 'collaborative', DEFAULT_SESSION_MODEL)}")
+        logging.info(f"Using cold-start model: {get_latest_model(MINIO_BUCKET_NAME, 'coldstart', DEFAULT_COLDSTART_MODEL)}")
         recommendations_df = recommend_products(session_model, cold_start, df, user_id, product_id, top_n=10)
         if recommendations_df is None or recommendations_df.empty:
             return jsonify({"error": "No recommendations generated"}), 404
@@ -273,7 +274,7 @@ def anonymous_recommend_api():
         if cold_start is None:
             return jsonify({"error": "Cold-start model not loaded"}), 503
 
-        logging.info(f"Using cold-start model: {get_latest_model(BUCKET_NAME, 'coldstart', DEFAULT_COLDSTART_MODEL)}")
+        logging.info(f"Using cold-start model: {get_latest_model(MINIO_BUCKET_NAME, 'coldstart', DEFAULT_COLDSTART_MODEL)}")
         recommendations_df = recommend_products_anonymous(cold_start, df, product_id)
         if recommendations_df is None or recommendations_df.empty:
             return jsonify({"error": "No recommendations generated"}), 404
@@ -299,7 +300,7 @@ def pretrain_contentbase_api():
 
         pretrain = pretrain_contentbase(arg_parse_contentbase(), df, minio_bucket_name=MINIO_BUCKET_NAME, k=k)
         global content_model
-        content_model = load_model_from_minio(BUCKET_NAME, pretrain[1])
+        content_model = load_model_from_minio(MINIO_BUCKET_NAME, pretrain[1])
         return jsonify({"result": pretrain})
     except Exception as e:
         logging.error(f"Error in pretrain_contentbase_api: {str(e)}", exc_info=True)
@@ -311,7 +312,7 @@ def pretrain_collaborative_api():
 
         pretrain = pretrain_collaborative(arg_parse_collaborative(), df, minio_bucket_name=MINIO_BUCKET_NAME)
         global session_model
-        session_model = load_model_from_minio(BUCKET_NAME, pretrain[1])
+        session_model = load_model_from_minio(MINIO_BUCKET_NAME, pretrain[1])
         return jsonify({"result": pretrain})
     except Exception as e:
         logging.error(f"Error in pretrain_collaborative_api: {str(e)}", exc_info=True)
@@ -333,7 +334,7 @@ def pretrain_coldstart_api():
         # Update the global cold_start model
         global cold_start
         if pretrain:  # Only update if pretrain returned a result (i.e., args.save=True)
-            cold_start = load_model_from_minio(BUCKET_NAME, pretrain[1])
+            cold_start = load_model_from_minio(MINIO_BUCKET_NAME, pretrain[1])
 
         return jsonify({"result": pretrain})
     except Exception as e:
