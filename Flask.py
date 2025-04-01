@@ -126,7 +126,7 @@ def load_model_from_minio(bucket_name, object_name):
 with model_lock:
     latest_session_model = get_latest_model(MINIO_BUCKET_NAME , "collaborative", DEFAULT_SESSION_MODEL)
     latest_content_model = get_latest_model(MINIO_BUCKET_NAME , "content_base", DEFAULT_CONTENT_MODEL)
-    latest_cold_start_model = get_latest_model(BUCKET_NAME, "coldstart", DEFAULT_COLDSTART_MODEL)
+    latest_cold_start_model = get_latest_model(MINIO_BUCKET_NAME, "coldstart", DEFAULT_COLDSTART_MODEL)
 
     session_model = load_model_from_minio(MINIO_BUCKET_NAME, latest_session_model)
     content_model = load_model_from_minio(MINIO_BUCKET_NAME, latest_content_model)
@@ -199,7 +199,7 @@ def predict_api():
         if content_model is None:
             return jsonify({"error": "Content model not loaded"}), 503
 
-        logging.info(f"Using content model: {get_latest_model(BUCKET_NAME, 'content_base', DEFAULT_CONTENT_MODEL)}")
+        logging.info(f"Using content model: {get_latest_model(MINIO_BUCKET_NAME, 'content_base', DEFAULT_CONTENT_MODEL)}")
         recommendation_result = recommendation(content_model, product_id, top_k=10)
         logging.info(f"Raw recommendations: {recommendation_result}")
 
