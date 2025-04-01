@@ -11,7 +11,9 @@ def preprocess_data(df, nrows=None, is_encoded=True):
     df = df
 
     df = df.replace([0, '0'], np.nan).dropna()
-
+    initial_row_count = len(df)
+    df = df[~df["event_time"].str.contains(r"\.\d+\s", regex=True, na=False)]
+    dropped_rows = initial_row_count - len(df)
     # Adjust category code
     df["category_code"] = df["category_code"].apply(lambda loc: str(loc).replace(".", " "))
 
