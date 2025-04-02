@@ -1,6 +1,7 @@
 import sys, os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), f"../")))
 from qdrant_client import QdrantClient, models
+from dotenv import load_dotenv
 import logging
 logging.basicConfig(level=logging.INFO)
 
