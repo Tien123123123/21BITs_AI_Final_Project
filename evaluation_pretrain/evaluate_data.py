@@ -15,15 +15,13 @@ def evaluate_model(df_test, df_GT, model, top_N):
     )
 
     # Display data
-    print("df_test.shape sau khi predict:", df_test.shape)
-    print("Số user_id duy nhất trong df_test:", df_test["user_id"].nunique())
-    print("Thống kê predicted_score:\n", df_test["predicted_score"].describe())
+   
 
     # Loại bỏ NaN
     df_test = df_test.dropna(subset=["predicted_score"])
 
     if df_test.empty:
-        print("Warning: df_test trống sau khi tính predicted_score!")
+        # print("Warning: df_test trống sau khi tính predicted_score!")
         return df_test, pd.DataFrame(), 0.0
 
     # Each user in df_test will contain only Top 1,2,3 items with high score
@@ -31,7 +29,7 @@ def evaluate_model(df_test, df_GT, model, top_N):
         lambda group: group.nlargest(top_N, "predicted_score")
     ).reset_index(drop=True)
 
-    print("df_test.shape sau khi lọc top N:", df_test.shape)
+    
 
     # Calculate Precision_All and Recall_All
     total_intersection = 0  # Tổng |Tu ∩ Cu| trên tất cả user
@@ -59,9 +57,7 @@ def evaluate_model(df_test, df_GT, model, top_N):
     recall_all = total_intersection / total_actual if total_actual > 0 else 0
     f1_score = 2 * precision_all * recall_all / (precision_all + recall_all) if precision_all + recall_all > 0 else 0
 
-    print(f"Precision All: {precision_all:.4f}")
-    print(f"Recall All: {recall_all:.4f}")
-    print(f"F1-score: {f1_score:.4f}")
+    
 
     return df_test, f1_score
 

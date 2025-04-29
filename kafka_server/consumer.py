@@ -179,3 +179,9 @@ def kafka_consumer(topic_name, bootstrap_servers=KAFKA_END_POINT, flask_url=FLAS
             consumer.commit()
             continue
 
+if __name__ == "__main__":
+    kafka_consumer(
+        topic_name="model_retrain_event",
+        bootstrap_servers="kafka:29092",
+        flask_url="https://ai.d2f.io.vn"  # Adjust this URL if Flask runs on a different host/port
+    )

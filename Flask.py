@@ -5,6 +5,7 @@ import logging
 from content_base.hybrid_recommendation import recommendation
 from collaborative.session_based_recommend import recommend_products
 from collaborative.session_based_recommend import recommend_products_anonymous
+from collaborative.cart_recommend import CartRecommender
 import pandas as pd
 import os
 from datetime import datetime
@@ -44,6 +45,7 @@ MINIO_BUCKET_NAME = "models"
 DEFAULT_SESSION_MODEL = 'collaborative.pkl'
 DEFAULT_CONTENT_MODEL = 'content_base.pkl'
 DEFAULT_COLDSTART_MODEL = 'coldstart.pkl'
+DEFAULT_CART_MODEL = 'association_rules.pkl'
 
 # Qdrant Configuration
 QDRANT_END_POINT = os.getenv('QDRANT_END_POINT', 'http://103.155.161.100:6333')
@@ -79,7 +81,7 @@ def get_latest_model(bucket_name, prefix, default_model):
     try:
         objects = list(minio_client.list_objects(bucket_name))
         model_files = [obj.object_name for obj in objects if obj.object_name.startswith(prefix)]
-        logging.info(f"📂 All models with prefix '{prefix}': {model_files}")
+       
         if not model_files:
             logging.warning(f"⚠️ No models found with prefix '{prefix}' in MinIO.")
             return default_model
@@ -87,10 +89,10 @@ def get_latest_model(bucket_name, prefix, default_model):
         timestamped_models = []
         for file in model_files:
             timestamp = extract_timestamp(file, prefix)
-            logging.info(f"🔍 Checking {file}, Extracted Timestamp: {timestamp}")
+           
             if timestamp:
                 timestamped_models.append((file, timestamp))
-                logging.info(f"✅ Valid timestamp found for {file}: {timestamp}")
+               
             else:
                 logging.warning(f"⚠️ No valid timestamp found in file: {file}")
 
@@ -100,7 +102,7 @@ def get_latest_model(bucket_name, prefix, default_model):
             return latest_model
 
         latest_model = sorted(model_files)[-1]
-        logging.warning(f"⚠️ No valid timestamps found. Using last lexicographical file: {latest_model}")
+        
         return latest_model
     except Exception as e:
         logging.error(f"❌ Error finding latest model for {prefix}: {str(e)}")
@@ -114,7 +116,7 @@ def load_model_from_minio(bucket_name, object_name):
         response.release_conn()
         model = pickle.load(BytesIO(model_data))
         logging.info(f"Loaded model '{object_name}' from MinIO successfully.")
-        logging.info(f"Model '{object_name}' structure: {type(model).__name__}, sample: {str(model)[:200]}")
+        
         return model
     except S3Error as e:
         logging.error(f"Model '{object_name}' not found in MinIO: {str(e)}")
@@ -128,10 +130,12 @@ with model_lock:
     latest_session_model = get_latest_model(MINIO_BUCKET_NAME , "collaborative", DEFAULT_SESSION_MODEL)
     latest_content_model = get_latest_model(MINIO_BUCKET_NAME , "content_base", DEFAULT_CONTENT_MODEL)
     latest_cold_start_model = get_latest_model(MINIO_BUCKET_NAME, "coldstart", DEFAULT_COLDSTART_MODEL)
+    lastest_cart_model = get_latest_model(MINIO_BUCKET_NAME, "association_rules", DEFAULT_CART_MODEL)
 
     session_model = load_model_from_minio(MINIO_BUCKET_NAME, latest_session_model)
     content_model = load_model_from_minio(MINIO_BUCKET_NAME, latest_content_model)
     cold_start = load_model_from_minio(MINIO_BUCKET_NAME, latest_cold_start_model)
+    cart_model = load_model_from_minio(MINIO_BUCKET_NAME, lastest_cart_model)
 
 if session_model is None:
     logging.warning("Session model is None.")
@@ -290,6 +294,49 @@ def anonymous_recommend_api():
     except Exception as e:
         logging.error(f"Error in anonymous-recommend endpoint: {str(e)}", exc_info=True)
         return jsonify({"error": "Internal Server Error", "details": str(e)}), 500
+
+# cart recommend
+@app.route('/cart-recommend', methods=['POST'])
+def cart_recommend_api():
+    try:
+        data = request.get_json()
+        logging.info(f"Received data for cart recommend: {data}")
+
+        cart_items = data.get('cart_items')
+        k = data.get('k', 5)  # Default to 5 recommendations if k is not provided
+
+        if not cart_items or not isinstance(cart_items, list):
+            return jsonify({"error": "Missing or invalid cart_items, must be a non-empty list"}), 400
+
+        # Keep cart_items as strings
+        cart_items = [str(item) for item in cart_items]
+        logging.info(f"Cart items: {cart_items}, k: {k}")
+
+        if cart_model is None:
+            return jsonify({"error": "Cart model not loaded"}), 503
+
+        logging.info(f"Using cart model: {get_latest_model(MINIO_BUCKET_NAME, 'association_rules', DEFAULT_CART_MODEL)}")
+        # Use the recommend function from cart_recommend (CartRecommender instance)
+    
+        recommnender = CartRecommender();
+
+        recommendations = recommnender.recommend(cart_model, cart_items, k=k)
+
+        if not recommendations:
+            return jsonify({"error": "No recommendations generated"}), 404
+
+        # The recommendations are in the format "product_id: <id>", so we need to strip the prefix
+        recommended_product_ids = [rec.split("product_id: ")[1] for rec in recommendations]
+        logging.info(f"Cart Recommendations: {recommended_product_ids}")
+
+        return jsonify({
+            "cart_items": cart_items,
+            "recommendations": [{"product_id": prod_id} for prod_id in recommended_product_ids]
+        }), 200
+    except Exception as e:
+        logging.error(f"Error in cart-recommend endpoint: {str(e)}", exc_info=True)
+        return jsonify({"error": "Internal Server Error", "details": str(e)}), 500
+
 
 # Pretrain Endpoints
 @app.route('/pretrain_contentbase', methods=['POST'])
