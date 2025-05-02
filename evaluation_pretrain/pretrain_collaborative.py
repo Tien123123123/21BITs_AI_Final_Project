@@ -18,6 +18,9 @@ def pretrain_collaborative(args, df , minio_bucket_name = "models"):
     params_dict = ast.literal_eval(args.param) if args.param != False else False
     logging.info(params_dict)
     best_weights, best_f1_score, model_filename = optimize_and_train(df)
+    logging.info(f"Best F1 Score: {best_f1_score}")
+    logging.info(f"Best Weights: {best_weights}")
+    logging.info(f"Model Filename: {model_filename}")
     logging.info("Training Model Complete")
 
     # Save model

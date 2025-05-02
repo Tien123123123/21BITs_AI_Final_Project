@@ -13,7 +13,7 @@ def recommend_products(cf_model,cold_start_clusters ,df, target_user_id, target_
     df["event_time"] = pd.to_datetime(df["event_time"])
 
 
-    product_details = df[["product_id", "category_code", "brand"]].drop_duplicates(subset=["product_id"])
+    product_details = df[["product_id", "name" ,"category_code", "brand"]].drop_duplicates(subset=["product_id"])
 
     user_exists = target_user_id in cf_model.trainset._raw2inner_id_users
     target_product_id= str(target_product_id)

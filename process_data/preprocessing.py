@@ -5,16 +5,35 @@ from sklearn.impute import SimpleImputer
 from scipy.sparse import csr_matrix
 from qdrant_server.server import connect_qdrant
 from qdrant_server.load_data import load_to_df
-
+import logging
+# from pprintpp import pprint
 
 def preprocess_data(df, nrows=None, is_encoded=True):
+       
+    logging.info(f"Finished loading {len(df)} total points into DataFrame 1.")
+    unique_users1 = df['user_id'].nunique()
+    logging.info(f"unique user: {unique_users1}")
+    unique_products1 = df['product_id'].nunique()
+    logging.info(f"unique product: {unique_products1}")
     df = df
-
+    drop_features = ["eventTime"]
+    df = df.drop(drop_features, axis=1)
+    for col in df.columns:
+        logging.info(f"- {col}")
     df = df.replace([0, '0'], np.nan).dropna()
 
-    initial_row_count = len(df)
-    df = df[~df["event_time"].str.contains(r".\d+\s", regex=True, na=False)]
-    dropped_rows = initial_row_count - len(df)
+    logging.info(f"Finished loading {len(df)} total points into DataFrame 2.")
+    unique_users2 = df['user_id'].nunique()
+    logging.info(f"unique user: {unique_users2}")
+    unique_products2 = df['product_id'].nunique()
+    logging.info(f"unique product: {unique_products2}")
+    
+    
+    logging.info(f"Finished loading {len(df)} total points into DataFrame 3.")
+    unique_users3 = df['user_id'].nunique()
+    logging.info(f"unique user: {unique_users3}")
+    unique_products3 = df['product_id'].nunique()
+    logging.info(f"unique product: {unique_products3}")
 
     # Adjust category code
     df["category_code"] = df["category_code"].apply(lambda loc: str(loc).replace(".", " "))
@@ -56,7 +75,7 @@ def preprocess_data(df, nrows=None, is_encoded=True):
           .merge(total_purchase, on=["user_id", "user_session"], how="left"))
 
     # Drop duplicate rows
-    df = df.drop_duplicates()  # Loại bỏ các dòng trùng lặp
+    df = df.drop_duplicates()
 
     df.fillna(0, inplace=True)
 
@@ -79,7 +98,7 @@ def preprocess_data(df, nrows=None, is_encoded=True):
 
 
 if __name__ == '__main__':
-    root = "data/one_data.csv"  # write data in here
-
-    df_main, _ = preprocess_data(root, is_encoded=True, nrows=100)
-    df_main.to_csv("processed_data.csv", index=False)  # Lưu lại dữ liệu đã xử lý vào file CSV
+    root = "../data/one_data.csv"  # write data in here
+    df = pd.read_csv(root, nrows=100)
+    df_main = preprocess_data(df, is_encoded=True, nrows=100)
+    print(df_main.head(10))
