@@ -8,6 +8,7 @@ from kafka import KafkaConsumer, TopicPartition
 from evaluation_pretrain.pretrain_contentbase import pretrain_contentbase
 from evaluation_pretrain.pretrain_collaborative import pretrain_collaborative
 from evaluation_pretrain.pretrain_coldstart import train_cold_start_clusters
+from evaluation_pretrain.pretrain_association import pretrain_association
 from arg_parse.arg_parse_contentbase import arg_parse_contentbase
 from arg_parse.arg_parse_collaborative import arg_parse_collaborative
 from arg_parse.arg_parse_coldstart import arg_parse_coldstart
@@ -26,7 +27,6 @@ QDRANT_END_POINT = os.getenv('QDRANT_END_POINT', 'http://103.155.161.100:6333')
 QDRANT_COLLECTION_NAME = os.getenv('QDRANT_COLLECTION_NAME', 'test_collection')
 
 def kafka_consumer(topic_name, bootstrap_servers=KAFKA_END_POINT, flask_url=FLASK_END_POINT):
-    # Khởi tạo logging
     logging.basicConfig(
         level=logging.INFO,
         format='%(asctime)s - %(levelname)s - %(threadName)s - %(message)s',
@@ -34,7 +34,6 @@ def kafka_consumer(topic_name, bootstrap_servers=KAFKA_END_POINT, flask_url=FLAS
     )
     logging.info(f"Command-line arguments: {sys.argv}")
 
-    # Kết nối Qdrant một lần duy nhất
     q_drant_end_point = QDRANT_END_POINT
     q_drant_collection_name = QDRANT_COLLECTION_NAME
     try:
@@ -44,7 +43,6 @@ def kafka_consumer(topic_name, bootstrap_servers=KAFKA_END_POINT, flask_url=FLAS
         logging.error(f"❌ Lỗi khi kết nối Qdrant: {str(e)}", exc_info=True)
         return
 
-    # Khởi tạo Kafka consumer
     try:
         consumer = KafkaConsumer(
             topic_name,
@@ -53,17 +51,16 @@ def kafka_consumer(topic_name, bootstrap_servers=KAFKA_END_POINT, flask_url=FLAS
             enable_auto_commit=False,
             group_id=f'my-consumer-group-{datetime.utcnow().timestamp()}',
             value_deserializer=lambda v: v.decode('utf-8') if v else None,
-            max_poll_interval_ms=600000,  # Increase to 10 minutes
-            max_poll_records=1,           # Process one message at a time
-            session_timeout_ms=60000,     # 60 seconds
-            heartbeat_interval_ms=20000   # 20 seconds
+            max_poll_interval_ms=600000,
+            max_poll_records=1,
+            session_timeout_ms=60000,
+            heartbeat_interval_ms=20000
         )
         logging.info(f"📡 Đang lắng nghe topic: {topic_name} để đợi message mới...")
     except Exception as e:
         logging.error(f"❌ Lỗi khi khởi tạo Kafka consumer: {str(e)}", exc_info=True)
         return
 
-    # Lấy offset cuối cùng khi khởi động
     try:
         consumer.poll(timeout_ms=1000)
         initial_offsets = {TopicPartition(topic_name, p): consumer.position(TopicPartition(topic_name, p))
@@ -74,10 +71,9 @@ def kafka_consumer(topic_name, bootstrap_servers=KAFKA_END_POINT, flask_url=FLAS
         logging.error(f"❌ Lỗi khi lấy offset ban đầu: {str(e)}", exc_info=True)
         return
 
-    # Lắng nghe message mới
     while True:
         try:
-            message_dict = consumer.poll(timeout_ms=1000)  # 1-second timeout for frequent heartbeats
+            message_dict = consumer.poll(timeout_ms=1000)
             if not message_dict:
                 logging.debug(f"No messages received from {topic_name} in last poll.")
                 continue
@@ -92,7 +88,6 @@ def kafka_consumer(topic_name, bootstrap_servers=KAFKA_END_POINT, flask_url=FLAS
                     current_offset = message.offset
                     tp = TopicPartition(message.topic, message.partition)
 
-                    # Chỉ xử lý nếu offset lớn hơn hoặc bằng offset khởi đầu
                     if current_offset >= initial_offsets[tp]:
                         logging.info(f"📢 Nhận được message mới: {message.value}")
                         logging.info(f"  - Topic: {message.topic}")
@@ -101,7 +96,6 @@ def kafka_consumer(topic_name, bootstrap_servers=KAFKA_END_POINT, flask_url=FLAS
                         logging.info(f"  - Key: {message.key}")
                         logging.info(f"  - Status: Ready to Pretrain!")
 
-                        # Kiểm tra thời gian message (tùy chọn)
                         try:
                             msg_data = json.loads(message.value)
                             event_time = msg_data.get('event_time')
@@ -116,13 +110,11 @@ def kafka_consumer(topic_name, bootstrap_servers=KAFKA_END_POINT, flask_url=FLAS
                         except (json.JSONDecodeError, ValueError) as e:
                             logging.warning(f"Không thể parse event_time từ message: {str(e)}")
 
-                        # Offload pretraining to a separate thread
                         def process_message():
                             start_time = datetime.utcnow()
                             logging.info("Starting pretraining process...")
 
                             try:
-                                # Kết nối Qdrant và xử lý dữ liệu
                                 df = load_to_df(client=client, collection_name=q_drant_collection_name)
                                 logging.info(f"Data validated successfully: {len(df)} records")
                                 unique_users= df['user_id'].nunique()
@@ -131,30 +123,27 @@ def kafka_consumer(topic_name, bootstrap_servers=KAFKA_END_POINT, flask_url=FLAS
                                 logging.info(f"unique product: {unique_products}")
 
                                 df = preprocess_data(df, is_encoded=False, nrows=None)
-                                logging.info(f"Data validated after preprocessing successfully: {len(df)} records")
-                                unique_users= df['user_id'].nunique()
-                                logging.info(f"unique user after preprocessing: {unique_users}")
-                                unique_products= df['product_id'].nunique()
-                                logging.info(f"unique product after preprocessing: {unique_products}")
-                                logging.info(f"Data loading and preprocessing took {(datetime.utcnow() - start_time).total_seconds()} seconds")
-
-                                # Pretrain contentbase
+                         
                                 start_pretrain = datetime.utcnow()
                                 pretrain_contentbase(args=arg_parse_contentbase(), df=df)
                                 logging.info(f"pretrain_contentbase took {(datetime.utcnow() - start_pretrain).total_seconds()} seconds")
 
-                                # Pretrain collaborative
                                 start_pretrain = datetime.utcnow()
                                 pretrain_collaborative(args=arg_parse_collaborative(), df=df)
                                 logging.info(f"pretrain_collaborative took {(datetime.utcnow() - start_pretrain).total_seconds()} seconds")
 
-                                # Pretrain coldstart
                                 start_pretrain = datetime.utcnow()
                                 train_cold_start_clusters(args=arg_parse_coldstart(), df=df)
                                 logging.info(f"pretrain_contentbase took {(datetime.utcnow() - start_pretrain).total_seconds()} seconds")
+
+                                start_pretrain = datetime.utcnow()
+                                df_electronics = df[df["category_code"].str.startswith("electronics")]
+                                logging.info(f"Filtered {len(df_electronics)} records in 'electronics' category for association pretraining.")
+                                pretrain_association(df=df_electronics)
+                                logging.info(f"pretrain_association took {(datetime.utcnow() - start_pretrain).total_seconds()} seconds")
+
                                 logging.info(f"Total pretraining process took {(datetime.utcnow() - start_time).total_seconds()} seconds")
 
-                                # Call /refresh_models endpoint after successful pretraining
                                 response = requests.post(f"{flask_url}/refresh_models")
                                 if response.status_code == 200:
                                     logging.info(f"✅ Successfully refreshed models via {flask_url}/refresh_models")
@@ -163,7 +152,6 @@ def kafka_consumer(topic_name, bootstrap_servers=KAFKA_END_POINT, flask_url=FLAS
                             except Exception as e:
                                 logging.error(f"❌ Error during pretraining or model refresh: {str(e)}", exc_info=True)
 
-                        # Start pretraining in a separate thread
                         pretrain_thread = threading.Thread(target=process_message, daemon=True)
                         pretrain_thread.start()
 
@@ -183,5 +171,5 @@ if __name__ == "__main__":
     kafka_consumer(
         topic_name="model_retrain_event",
         bootstrap_servers="kafka:29092",
-        flask_url="https://ai.d2f.io.vn"  # Adjust this URL if Flask runs on a different host/port
+        flask_url="https://ai.d2f.io.vn"
     )

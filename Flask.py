@@ -19,6 +19,7 @@ from qdrant_server.server import connect_qdrant
 from evaluation_pretrain.pretrain_collaborative import pretrain_collaborative
 from evaluation_pretrain.pretrain_contentbase import pretrain_contentbase
 from evaluation_pretrain.pretrain_coldstart import train_cold_start_clusters
+from evaluation_pretrain.pretrain_association import pretrain_association
 from arg_parse.arg_parse_contentbase import arg_parse_contentbase
 from arg_parse.arg_parse_collaborative import arg_parse_collaborative
 from arg_parse.arg_parse_coldstart import arg_parse_coldstart
@@ -387,6 +388,19 @@ def pretrain_coldstart_api():
     except Exception as e:
         logging.error(f"Error in pretrain_coldstart_api: {str(e)}", exc_info=True)
         return jsonify({"error": str(e)}), 500
+
+@app.route('/pretrain_association', methods=['POST'])
+def pretrain_association_api():
+    try:
+        # You can accept optional params if needed in the future
+        df_electronics = df[df["category_code"].str.startswith("electronics")]
+       
+        result = pretrain_association(df_electronics, minio_bucket_name=MINIO_BUCKET_NAME)
+        return jsonify({"result": result})
+    except Exception as e:
+        logging.error(f"Error in pretrain_association_api: {str(e)}", exc_info=True)
+        return jsonify({"error": str(e)}), 500
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
