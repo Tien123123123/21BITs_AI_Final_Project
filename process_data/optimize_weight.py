@@ -46,7 +46,7 @@ def optimize_and_train(df):
 
 
     optimizer = BayesianOptimization(f=lambda w3, r2, r4, r1: evaluate_weights(df=df, w3=w3, r2=r2, r4=r4, r1=r1), pbounds=pbounds, random_state=5)
-    optimizer.maximize(init_points=10, n_iter=20)  # 10 random + 20 optimized trials
+    optimizer.maximize(init_points=1, n_iter=1)  # 10 random + 20 optimized trials
 
     best_params = optimizer.max['params']
     best_f1_score = optimizer.max['target']
