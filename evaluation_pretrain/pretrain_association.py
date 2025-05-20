@@ -41,7 +41,7 @@ def create_sparse_dataframe(transactions: pd.Series, *, min_item_count: int = 5)
     return pd.DataFrame.sparse.from_spmatrix(sparse_matrix, columns=frequent_items.astype(str))
 
 
-def preprocess_transactions(df: pd.DataFrame, sample_ratio: float = 0.4, event_type_filter: str | None = None) -> pd.Series:
+def preprocess_transactions(df: pd.DataFrame, sample_ratio: float = 0.3, event_type_filter: str | None = None) -> pd.Series:
     logging.info("🔍 Preprocessing transactions...")
     if event_type_filter:
         df = df[df["event_type"] == event_type_filter]
@@ -76,7 +76,7 @@ def generate_association_rules(transactions: pd.Series, min_item_count=5, min_su
 def pretrain_association(df: pd.DataFrame, minio_bucket_name: str = "models"):
     logging.info("Starting association rule training...")
 
-    transactions = preprocess_transactions(df, sample_ratio=0.4)
+    transactions = preprocess_transactions(df, sample_ratio=0.3)
     rules = generate_association_rules(transactions)
 
     logging.info(f"Generated {len(rules)} rules.")

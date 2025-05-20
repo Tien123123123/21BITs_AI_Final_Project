@@ -148,6 +148,7 @@ if cold_start is None:
 # Load dataset from Qdrant
 client = connect_qdrant(end_point=QDRANT_END_POINT, collection_name=QDRANT_COLLECTION_NAME)
 df = load_to_df(client=client, collection_name=QDRANT_COLLECTION_NAME)
+df_2 = load_to_df(client, collection_name="test_v3")
 df = preprocess_data(df, is_encoded=False, nrows=None)
 logging.info(f"Data validated after preprocessing successfully: {len(df)} records")
 unique_users= df['user_id'].nunique()
@@ -346,7 +347,7 @@ def pretrain_contentbase_api():
         data = request.get_json()
         k = data["k_out"]
 
-        pretrain = pretrain_contentbase(arg_parse_contentbase(), df, minio_bucket_name=MINIO_BUCKET_NAME, k=k)
+        pretrain = pretrain_contentbase(arg_parse_contentbase(), df_2, minio_bucket_name=MINIO_BUCKET_NAME, k=k)
         global content_model
         content_model = load_model_from_minio(MINIO_BUCKET_NAME, pretrain[1])
         return jsonify({"result": pretrain})
