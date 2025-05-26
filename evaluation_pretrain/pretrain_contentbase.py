@@ -20,7 +20,7 @@ def pretrain_contentbase(args, df , minio_bucket_name = "models", k=False):
     logging.info("start pretrain_contentbase")
     # Preprocess and Split data
     df = df
-    selected_features = ["name", "product_id", "category_code", "brand", "price"]
+    selected_features = ["name", "product_id", "category", "description", "type", "brand", "price"]
     df_content = df[selected_features].drop_duplicates(subset=['product_id'])
     df_content = df_content.sort_values(by="product_id", ascending=False)
     logging.info("Content-base: Data Preprocessing Complete")

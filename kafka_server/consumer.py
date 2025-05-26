@@ -136,11 +136,11 @@ def kafka_consumer(topic_name, bootstrap_servers=KAFKA_END_POINT, flask_url=FLAS
                                 train_cold_start_clusters(args=arg_parse_coldstart(), df=df)
                                 logging.info(f"pretrain_contentbase took {(datetime.utcnow() - start_pretrain).total_seconds()} seconds")
 
-                                start_pretrain = datetime.utcnow()
-                                df_electronics = df[df["category_code"].str.startswith("electronics")]
-                                logging.info(f"Filtered {len(df_electronics)} records in 'electronics' category for association pretraining.")
-                                pretrain_association(df=df_electronics)
-                                logging.info(f"pretrain_association took {(datetime.utcnow() - start_pretrain).total_seconds()} seconds")
+                                # start_pretrain = datetime.utcnow()
+                                # df_electronics = df[df["category_code"].str.startswith("electronics")]
+                                # logging.info(f"Filtered {len(df_electronics)} records in 'electronics' category for association pretraining.")
+                                # pretrain_association(df=df_electronics)
+                                # logging.info(f"pretrain_association took {(datetime.utcnow() - start_pretrain).total_seconds()} seconds")
 
                                 logging.info(f"Total pretraining process took {(datetime.utcnow() - start_time).total_seconds()} seconds")
 

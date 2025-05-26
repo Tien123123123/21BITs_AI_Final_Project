@@ -15,3 +15,5 @@ bayesian-optimization==2.0.3
 python-dotenv==1.0.1
 mlxtend
 scipy
+fastembed==0.3.6
+urllib3==2.2.3

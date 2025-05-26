@@ -60,8 +60,7 @@ def load_to_df(client: QdrantClient, collection_name="userbehaviors_embeddings",
 
     df = pd.DataFrame(all_data)
     logging.info(f"Finished loading {len(df)} total points into DataFrame.")
-    unique_users1 = df['user_id'].nunique()
-    logging.info(f"unique user: {unique_users1}")
+    
     unique_products1 = df['product_id'].nunique()
     logging.info(f"unique product: {unique_products1}")
     return df

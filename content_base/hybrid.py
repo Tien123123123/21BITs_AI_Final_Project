@@ -13,9 +13,11 @@ def content_base(df_content, k=5):
     df_content['combined_features'] = (
             df_content['name'].astype(str) + " " +
             df_content['product_id'].astype(str) + " " +
-            df_content['category_code'].astype(str) + " " +
+            df_content['category'].astype(str) + " " +
             df_content['brand'].astype(str) + " " +
-            df_content['price'].astype(str)
+            df_content['price'].astype(str) + " " +
+            df_content['description'] + " " +
+            df_content['type']
     )
 
     # Vectorize data
