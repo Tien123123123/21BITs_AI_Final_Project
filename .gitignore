@@ -1,5 +1,6 @@
 *.pkl
 *.csv
+*.env
 _pycache_/
 dataset/ *.csv
 chatbox/
